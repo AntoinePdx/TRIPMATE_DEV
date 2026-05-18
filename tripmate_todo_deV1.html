@@ -8,6 +8,9 @@
 <title>TripMate · Rappels</title>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <link rel="icon" type="image/png" href="favicon.png" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#570317" />
+<meta name="apple-mobile-web-app-title" content="TripMate" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -813,6 +816,13 @@ document.addEventListener('keydown', e => {
 });
 
 checkAuth().then(ok => { if (ok) init(); });
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(){/* ignore */});
+  });
+}
 </script>
 </body>
 </html>
