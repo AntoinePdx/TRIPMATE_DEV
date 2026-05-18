@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>TripMate · Accueil</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --brand:       #570317;
+  --brand-pale:  #f9e5ea;
+  --text-1:      #1a1a1a;
+  --text-2:      #5a5a5a;
+  --text-3:      #9a9a9a;
+  --bg-0:        #ffffff;
+  --bg-1:        #f7f7f6;
+  --bg-2:        #f0efed;
+  --border:      rgba(0,0,0,0.08);
+  --border-hard: rgba(0,0,0,0.14);
+  --success:     #1a7a4a;
+  --urgent:      #c0392b;
+  --urgent-bg:   #fdf0ef;
+  --warn:        #a05000;
+  --warn-bg:     #fff4e6;
+  --soon:        #2c5fa3;
+  --soon-bg:     #eef3fb;
+  --slot-matin-bg: #fff8e1;
+  --slot-matin-c:  #b7740a;
+  --slot-aprem-bg: #fff3e0;
+  --slot-aprem-c:  #b85c00;
+  --slot-soir-bg:  #ede7f6;
+  --slot-soir-c:   #5e35b1;
+  --r-sm:        8px;
+  --font:        'DM Sans', sans-serif;
+  --mono:        'DM Mono', monospace;
+}
+
+body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); min-height: 100dvh; display: flex; flex-direction: column; align-items: center; }
+.app { width: 100%; max-width: 430px; min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg-1); }
+
+/* LOADER */
+.loader-screen { position: fixed; inset: 0; background: var(--bg-0); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 998; gap: 16px; transition: opacity .3s; }
+.loader-screen.hidden { opacity: 0; pointer-events: none; }
+.loader-emoji { font-size: 36px; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.92)} }
+.loader-text { font-size: 14px; color: var(--text-3); }
+
+/* PASSWORD SCREEN */
+.pw-screen { position: fixed; inset: 0; background: var(--bg-0); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 20px; padding: 32px; }
+.pw-screen.hidden { display: none; }
+.pw-logo { font-size: 40px; }
+.pw-title { font-size: 22px; font-weight: 600; color: var(--text-1); text-align: center; }
+.pw-sub { font-size: 14px; color: var(--text-3); text-align: center; }
+.pw-input-wrap { width: 100%; max-width: 300px; position: relative; }
+.pw-input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 0.5px solid var(--border-hard); background: var(--bg-1); font-size: 16px; font-family: var(--font); color: var(--text-1); outline: none; transition: border-color .15s; text-align: center; letter-spacing: .1em; }
+.pw-input:focus { border-color: var(--brand); }
+.pw-input.error { border-color: var(--urgent); }
+.pw-error { font-size: 12px; color: var(--urgent); text-align: center; min-height: 18px; margin-top: -10px; }
+.pw-btn { width: 100%; max-width: 300px; padding: 14px; border-radius: 12px; border: none; background: var(--brand); color: #fff; font-size: 15px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: opacity .15s; }
+.pw-btn:active { opacity: .85; }
+
+/* TOP BAR */
+.top-bar { background: var(--brand); border-bottom: 0.5px solid rgba(0,0,0,.12); padding: 12px 14px; flex-shrink: 0; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 12px rgba(87,3,23,.12); }
+.top-bar-inner { display: flex; align-items: center; justify-content: space-between; }
+.top-bar-brand { display: flex; flex-direction: column; gap: 0; }
+.top-bar-name { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: #fff; }
+.top-bar-date { font-size: 9px; color: rgba(255,255,255,.68); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.top-bar-actions { display: flex; align-items: flex-end; flex-direction: column; gap: 6px; min-width: 156px; }
+.trip-switcher { display: flex; align-items: center; gap: 7px; width: 110px; max-width: 52vw; color: #fff; background: rgba(255,255,255,.12); border: 0.5px solid rgba(255,255,255,.22); border-radius: 20px; padding: 5px 9px; }
+.trip-flag { width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.16); flex-shrink: 0; }
+.trip-selector { flex: 1; min-width: 0; border: none; background: transparent; color: #fff; font-family: var(--font); font-size: 12px; font-weight: 700; padding: 0 12px 0 0; outline: none; appearance: none; -webkit-appearance: none; text-align: right; cursor: pointer; overflow: hidden; text-overflow: ellipsis; }
+.trip-selector option { color: var(--text-1); }
+.trip-selector:focus { color: #fff; }
+.top-bar-pill { background: rgba(255,255,255,.12); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; letter-spacing: .03em; }
+
+/* SCROLL */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px 32px; display: flex; flex-direction: column; gap: 16px; }
+
+/* QUICK NAV */
+.nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nav-card { background: var(--bg-0); border-radius: 12px; border: 1px solid var(--border-hard); padding: 11px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; color: inherit; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: background .12s, transform .1s, border-color .12s, box-shadow .12s; -webkit-tap-highlight-color: transparent; }
+.nav-card:active { background: var(--bg-2); transform: scale(.98); box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.nav-card-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.nav-card-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nav-card-label { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.nav-card-sub { font-size: 10px; color: var(--text-3); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-card-accent { border-color: rgba(87,3,23,.38); box-shadow: 0 2px 10px rgba(87,3,23,.08); }
+
+/* SECTION HEADER */
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.section-title { font-size: 11px; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+.section-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+.section-dot-brand { background: var(--brand); }
+.section-count { font-size: 11px; color: var(--text-3); background: var(--bg-2); border-radius: 10px; padding: 1px 7px; }
+
+/* MOMENT BADGE */
+.moment-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.moment-matin { background: var(--slot-matin-bg); color: var(--slot-matin-c); }
+.moment-aprem { background: var(--slot-aprem-bg); color: var(--slot-aprem-c); }
+.moment-soir  { background: var(--slot-soir-bg);  color: var(--slot-soir-c); }
+.moment-all   { background: var(--bg-2);           color: var(--text-2); }
+
+/* EVENT CARDS */
+.event-list { display: flex; flex-direction: column; gap: 6px; }
+.event-card { background: var(--bg-0); border-radius: 10px; border: 0.5px solid var(--border); padding: 11px 13px; display: flex; align-items: flex-start; gap: 10px; animation: fadeUp .2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.event-card-spine { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; padding-top: 2px; }
+.event-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+.event-dot.matin { background: var(--slot-matin-c); }
+.event-dot.aprem { background: var(--slot-aprem-c); }
+.event-dot.soir  { background: var(--slot-soir-c); }
+.event-card-body { flex: 1; min-width: 0; }
+.event-card-title { font-size: 13px; font-weight: 600; color: var(--text-1); line-height: 1.3; }
+.event-card-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+.event-card-time { font-size: 10px; font-family: var(--mono); color: var(--text-3); }
+.event-card-addr { font-size: 11px; color: var(--text-3); }
+.slot-pill { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.slot-pill.matin { background: var(--slot-matin-bg); color: var(--slot-matin-c); }
+.slot-pill.aprem { background: var(--slot-aprem-bg); color: var(--slot-aprem-c); }
+.slot-pill.soir  { background: var(--slot-soir-bg);  color: var(--slot-soir-c); }
+
+/* EMPTY */
+.empty-block { background: var(--bg-0); border-radius: 10px; border: 0.5px solid var(--border); padding: 28px 20px; text-align: center; color: var(--text-3); font-size: 13px; }
+.empty-block-icon { font-size: 28px; margin-bottom: 6px; }
+
+/* TODO MINI CARDS */
+.todo-mini-list { display: flex; flex-direction: column; gap: 6px; }
+.todo-mini { background: var(--bg-0); border-radius: 10px; border: 0.5px solid var(--border); padding: 11px 13px; display: flex; align-items: center; gap: 10px; animation: fadeUp .2s ease; }
+.todo-mini.card-urgent { border-left: 3px solid var(--urgent); }
+.todo-mini.card-warn   { border-left: 3px solid var(--warn); }
+.todo-mini.card-soon   { border-left: 3px solid var(--soon); }
+.todo-mini-content { flex: 1; min-width: 0; }
+.todo-mini-title { font-size: 13px; font-weight: 500; color: var(--text-1); line-height: 1.3; }
+.todo-mini-date { font-size: 10px; color: var(--text-3); font-family: var(--mono); margin-top: 2px; }
+.todo-badge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 5px; flex-shrink: 0; }
+.badge-urgent { background: var(--urgent-bg); color: var(--urgent); }
+.badge-warn   { background: var(--warn-bg);   color: var(--warn); }
+.badge-soon   { background: var(--soon-bg);   color: var(--soon); }
+
+/* CURRENCY WIDGET */
+.currency-card { background: var(--bg-0); border-radius: 14px; border: 0.5px solid var(--border); padding: 16px; }
+
+.currency-top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.currency-toggle { display: flex; background: var(--bg-2); border-radius: 8px; padding: 2px; gap: 0; }
+.currency-toggle-btn { padding: 5px 12px; border-radius: 6px; border: none; background: none; font-size: 12px; font-weight: 600; font-family: var(--font); color: var(--text-3); cursor: pointer; transition: all .15s; }
+.currency-toggle-btn.active { background: var(--bg-0); color: var(--text-1); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+/* Currency selector pill */
+.currency-selector-wrap { margin-left: auto; position: relative; }
+.currency-selector-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 8px; border: 0.5px solid var(--border-hard); background: var(--bg-1); font-size: 12px; font-weight: 600; font-family: var(--font); color: var(--text-1); cursor: pointer; transition: background .12s; white-space: nowrap; }
+.currency-selector-btn:active { background: var(--bg-2); }
+.currency-selector-arrow { font-size: 9px; color: var(--text-3); transition: transform .15s; }
+.currency-selector-btn.open .currency-selector-arrow { transform: rotate(180deg); }
+.currency-dropdown { position: absolute; right: 0; top: calc(100% + 4px); background: var(--bg-0); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.14), 0 0 0 0.5px var(--border-hard); overflow: hidden; min-width: 190px; z-index: 50; opacity: 0; pointer-events: none; transform: scale(.94) translateY(-4px); transform-origin: top right; transition: opacity .14s, transform .14s; }
+.currency-dropdown.open { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); }
+.currency-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 13px; font-weight: 500; font-family: var(--font); color: var(--text-1); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .1s; }
+.currency-dropdown-item:active { background: var(--bg-1); }
+.currency-dropdown-item.selected { font-weight: 700; color: var(--brand); }
+.currency-dropdown-sep { height: 0.5px; background: var(--border); margin: 0 14px; }
+.currency-dropdown-flag { font-size: 18px; }
+
+.currency-input-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.currency-amount-wrap { flex: 1; position: relative; }
+.currency-amount { width: 100%; padding: 13px 14px; border-radius: 10px; border: 0.5px solid var(--border-hard); background: var(--bg-1); font-size: 22px; font-family: var(--mono); color: var(--text-1); outline: none; transition: border-color .15s; appearance: none; -webkit-appearance: none; }
+.currency-amount:focus { border-color: var(--brand); }
+.currency-from-label { font-size: 13px; font-weight: 700; color: var(--text-2); white-space: nowrap; min-width: 36px; text-align: center; }
+
+.currency-result-single { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--bg-1); border-radius: 10px; }
+.currency-result-left { display: flex; align-items: center; gap: 8px; }
+.currency-result-flag { font-size: 22px; }
+.currency-result-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.currency-result-rate { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+.currency-result-amount { font-size: 26px; font-family: var(--mono); font-weight: 500; color: var(--text-1); }
+.currency-result-code { font-size: 11px; color: var(--text-3); text-align: right; margin-top: 1px; }
+.currency-rate-note { font-size: 10px; color: var(--text-3); margin-top: 10px; text-align: center; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text-1); color: #fff; border-radius: 20px; padding: 9px 18px; font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- PASSWORD -->
+  <div class="pw-screen" id="pw-screen">
+    <div class="pw-logo">✈️</div>
+    <div class="pw-title">TripMate</div>
+    <div class="pw-sub">Entrez le mot de passe pour accéder à votre voyage</div>
+    <div class="pw-input-wrap">
+      <input class="pw-input" id="pw-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <div class="pw-error" id="pw-error"></div>
+    <button class="pw-btn" id="pw-btn">Accéder</button>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader-screen" id="loader">
+    <div class="loader-emoji">✈️</div>
+    <div class="loader-text">Chargement…</div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-bar-inner">
+      <div class="top-bar-brand">
+        <div class="top-bar-name">TripMate ✈</div>
+        <div class="top-bar-date" id="today-label">by Lenscape</div>
+      </div>
+      <div class="top-bar-actions">
+        <div class="trip-switcher">
+          <span class="trip-flag" id="trip-flag"></span>
+          <select class="trip-selector" id="trip-selector" aria-label="Choisir un voyage"></select>
+        </div>
+        <div class="top-bar-pill" id="header-date-pill">Aujourd'hui</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="scroll" id="main-scroll">
+
+    <!-- NAVIGATION RAPIDE -->
+    <div>
+      <div class="section-head">
+        <div class="section-title"><span class="section-dot section-dot-brand"></span>Navigation</div>
+      </div>
+      <div class="nav-grid">
+        <a href="tripmate_itineraire_deV3.html" class="nav-card nav-card-accent" id="nav-itinerary">
+          <div class="nav-card-icon">🗺️</div>
+          <div class="nav-card-text">
+            <div class="nav-card-label">Itinéraire</div>
+            <div class="nav-card-sub">Activités par jour</div>
+          </div>
+        </a>
+        <a href="tripmate_todo_deV1.html" class="nav-card nav-card-accent" id="nav-todos">
+          <div class="nav-card-icon">🔔</div>
+          <div class="nav-card-text">
+            <div class="nav-card-label">Rappels</div>
+            <div class="nav-card-sub" id="nav-todo-sub">Chargement…</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- ÉVÉNEMENTS DU JOUR -->
+    <div>
+      <div class="section-head">
+        <div class="section-title" id="events-section-label">
+          <span class="section-dot"></span>Programme du jour
+        </div>
+        <span class="moment-badge moment-all" id="events-moment-badge">—</span>
+      </div>
+      <div class="event-list" id="event-list">
+        <div class="empty-block"><div class="empty-block-icon">📅</div>Chargement…</div>
+      </div>
+    </div>
+
+    <!-- RAPPELS DU JOUR -->
+    <div id="todos-section">
+      <div class="section-head">
+        <div class="section-title"><span class="section-dot"></span>Rappels aujourd'hui</div>
+        <span class="section-count" id="todos-count">—</span>
+      </div>
+      <div class="todo-mini-list" id="todo-list">
+        <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
+      </div>
+    </div>
+
+    <!-- CONVERTISSEUR DE DEVISES -->
+    <div>
+      <div class="section-head">
+        <div class="section-title"><span class="section-dot"></span>Convertisseur</div>
+      </div>
+      <div class="currency-card">
+
+        <div class="currency-top-row">
+          <div class="currency-toggle">
+            <button class="currency-toggle-btn active" id="toggle-from-eur" onclick="setDirection('from_eur')">€ →</button>
+            <button class="currency-toggle-btn" id="toggle-to-eur" onclick="setDirection('to_eur')">→ €</button>
+          </div>
+          <div class="currency-selector-wrap">
+            <button class="currency-selector-btn" id="currency-selector-btn">
+              <span id="currency-selector-flag">🇺🇸</span>
+              <span id="currency-selector-code">USD</span>
+              <span class="currency-selector-arrow">▼</span>
+            </button>
+            <div class="currency-dropdown" id="currency-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="currency-input-row">
+          <div class="currency-amount-wrap">
+            <input class="currency-amount" id="currency-input" type="number" inputmode="decimal" value="100" min="0" />
+          </div>
+          <div class="currency-from-label" id="currency-from-label">EUR</div>
+        </div>
+
+        <div id="currency-result"></div>
+        <div class="currency-rate-note">Taux indicatifs · Vérifiez avant toute transaction</div>
+
+      </div>
+    </div>
+
+  </div><!-- /scroll -->
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://bqgrrzgfvkpxhkmaiumh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_SD2fV9dbbi8N3bV6FkcwtA_uFypC5BE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== ÉTAT =====
+let tripId = null;
+let trips = [];
+let homeRealtimeChannel = null;
+const TRIP_STORAGE_KEY = 'tm_selected_trip_id';
+
+// ===== UTILS =====
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function hideLoader() {
+  document.getElementById('loader').classList.add('hidden');
+}
+
+function todayLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function isEventDone(ev) {
+  return Boolean(ev?.is_done ?? ev?.done);
+}
+
+function logError(label, error) {
+  if (!error) return false;
+  console.error('[TripMate Accueil]', label, error);
+  showToast('Erreur : ' + (error.message || label));
+  return true;
+}
+
+function getStoredTripId() {
+  return new URLSearchParams(window.location.search).get('trip_id') || localStorage.getItem(TRIP_STORAGE_KEY);
+}
+
+function setSelectedTrip(id) {
+  tripId = id;
+  localStorage.setItem(TRIP_STORAGE_KEY, id);
+  updateNavLinks();
+}
+
+function updateNavLinks() {
+  const qs = tripId ? `?trip_id=${encodeURIComponent(tripId)}` : '';
+  document.getElementById('nav-itinerary').href = 'tripmate_itineraire_deV3.html' + qs;
+  document.getElementById('nav-todos').href = 'tripmate_todo_deV1.html' + qs;
+}
+
+function renderTripSelector() {
+  const selector = document.getElementById('trip-selector');
+  selector.innerHTML = trips.map((trip, index) => {
+    const label = trip.name || `Voyage ${index + 1}`;
+    return `<option value="${esc(trip.id)}" ${trip.id === tripId ? 'selected' : ''}>${esc(label)}</option>`;
+  }).join('');
+  updateTripColor();
+}
+
+function tripColor(trip) {
+  const colors = ['#570317', '#8d3f0f', '#1a7a4a', '#2c5fa3', '#6b4ca0', '#a05000', '#2f6f73', '#9f3a5b'];
+  const name = trip?.name || trip?.id || '';
+  const score = Array.from(name).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return colors[score % colors.length];
+}
+
+function updateTripColor() {
+  const marker = document.getElementById('trip-flag');
+  if (!marker) return;
+  marker.style.background = tripColor(trips.find(t => t.id === tripId));
+}
+
+function clearHomeData() {
+  document.getElementById('event-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">📅</div>Chargement…</div>`;
+  document.getElementById('todo-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>`;
+  document.getElementById('todos-count').textContent = '—';
+  document.getElementById('nav-todo-sub').textContent = 'Chargement…';
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== MOMENT DU JOUR =====
+function getMoment() {
+  const h = new Date().getHours();
+  if (h < 13) return 'matin';
+  if (h < 18) return 'aprem';
+  return 'soir';
+}
+
+function getMomentLabel(moment) {
+  return { matin: '🌅 Matin', aprem: '☀️ Après-midi', soir: '🌙 Soir' }[moment];
+}
+
+function getMomentClass(moment) {
+  return { matin: 'moment-matin', aprem: 'moment-aprem', soir: 'moment-soir' }[moment];
+}
+
+function initDateHeader() {
+  const now = new Date();
+  const label = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById('today-label').textContent = 'by Lenscape';
+  document.getElementById('header-date-pill').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+  const moment = getMoment();
+  const badge = document.getElementById('events-moment-badge');
+  badge.textContent = getMomentLabel(moment);
+  badge.className = 'moment-badge ' + getMomentClass(moment);
+}
+
+// ===== CHARGEMENT ÉVÉNEMENTS =====
+async function loadTodayEvents() {
+  const today = todayLocal();
+  const moment = getMoment();
+
+  // Trouver le jour correspondant à aujourd'hui
+  const { data: days, error: dayError } = await sb.from('days')
+    .select('id, label, date')
+    .eq('trip_id', tripId)
+    .eq('date', today)
+    .limit(1);
+
+  const list = document.getElementById('event-list');
+
+  if (logError('Chargement du jour', dayError)) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger le programme</div>`;
+    return;
+  }
+
+  if (!days || days.length === 0) {
+    // Pas de jour pour aujourd'hui — chercher le prochain jour planifié
+    const { data: nextDays, error: nextDayError } = await sb.from('days')
+      .select('id, label, date')
+      .eq('trip_id', tripId)
+      .gt('date', today)
+      .order('date', { ascending: true })
+      .limit(1);
+
+    if (logError('Chargement du prochain jour', nextDayError)) {
+      list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger le prochain jour</div>`;
+      return;
+    }
+
+    if (!nextDays || nextDays.length === 0) {
+      list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">🗺️</div>Aucun jour planifié pour aujourd'hui</div>`;
+    } else {
+      const nd = nextDays[0];
+      const dateStr = new Date(nd.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+      list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">📅</div>Prochain jour : <strong>${nd.label || nd.date}</strong><br><span style="font-size:11px">${dateStr}</span></div>`;
+    }
+    return;
+  }
+
+  const dayId = days[0].id;
+
+  // Charger tous les events du jour (pas de filtre slot)
+  const { data: allEvents, error: eventsError } = await sb.from('events')
+    .select('*')
+    .eq('day_id', dayId)
+    .order('position', { ascending: true, nullsFirst: false });
+
+  if (logError('Chargement des activités', eventsError)) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les activités</div>`;
+    return;
+  }
+
+  if (!allEvents || allEvents.length === 0) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">☀️</div>Aucune activité planifiée aujourd'hui</div>`;
+    return;
+  }
+
+  // Mettre en avant les events du créneau actuel en premier, puis les autres
+  const currentSlot = allEvents.filter(e => e.slot === moment && !isEventDone(e));
+  const otherActive = allEvents.filter(e => e.slot !== moment && !isEventDone(e));
+  const done = allEvents.filter(e => isEventDone(e));
+
+  const toShow = [...currentSlot, ...otherActive, ...done].slice(0, 6);
+  renderEventCards(toShow, list, moment);
+}
+
+function renderEventCards(events, container, currentMoment) {
+  const SLOT = { matin: 'Matin', aprem: 'Ap-m', soir: 'Soir' };
+  container.innerHTML = events.map(ev => {
+    const slotClass = ev.slot || '';
+    const isCurrent = currentMoment && ev.slot === currentMoment;
+    const slotPill = ev.slot ? `<span class="slot-pill ${slotClass}">${SLOT[ev.slot] || ev.slot}</span>` : '';
+    const timeStr = ev.time ? `<span class="event-card-time">${esc(ev.time)}</span>` : '';
+    const addr = ev.address ? `<span class="event-card-addr">📍 ${esc(ev.address)}</span>` : '';
+    const done = isEventDone(ev);
+    const doneStyle = done ? 'opacity:.45;' : '';
+    const doneTitle = done ? 'style="text-decoration:line-through;color:var(--text-3)"' : '';
+    return `
+    <div class="event-card" style="${doneStyle}">
+      <div class="event-card-spine">
+        <div class="event-dot ${slotClass}"></div>
+      </div>
+      <div class="event-card-body">
+        <div class="event-card-title" ${doneTitle}>${esc(ev.title)}</div>
+        <div class="event-card-meta">${slotPill}${timeStr}${addr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== CHARGEMENT RAPPELS =====
+async function loadTodayTodos() {
+  const today = todayLocal();
+
+  // Rappels avec date = aujourd'hui + rappels généraux non terminés
+  const { data: todos, error: todosError } = await sb.from('todos')
+    .select('*')
+    .eq('trip_id', tripId)
+    .eq('is_done', false)
+    .order('created_at', { ascending: true });
+
+  const list = document.getElementById('todo-list');
+  const countEl = document.getElementById('todos-count');
+  const navSub = document.getElementById('nav-todo-sub');
+
+  if (logError('Chargement des rappels', todosError)) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les rappels</div>`;
+    countEl.textContent = '—';
+    navSub.textContent = 'Erreur de chargement';
+    return;
+  }
+
+  if (!todos || todos.length === 0) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun rappel en attente</div>`;
+    countEl.textContent = '0';
+    navSub.textContent = 'Aucun rappel';
+    return;
+  }
+
+  const overdueTodos = todos.filter(t => t.due_date && t.due_date < today);
+  const todayTodosOnly = todos.filter(t => t.due_date === today);
+  const todayTodos = [...overdueTodos, ...todayTodosOnly].slice(0, 5);
+
+  countEl.textContent = todayTodos.length;
+  navSub.textContent = todayTodos.length > 0
+    ? `${todayTodos.length} rappel${todayTodos.length > 1 ? 's' : ''} prioritaire${todayTodos.length > 1 ? 's' : ''}`
+    : 'Tout est à jour ✓';
+
+  if (todayTodos.length === 0) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Tout est à jour !</div>`;
+    return;
+  }
+
+  list.innerHTML = todayTodos.map(t => {
+    const urgencyClass = getUrgencyClass(t, today);
+    const badgeHtml = urgencyClass ? `<span class="todo-badge ${urgencyClass.badge}">${urgencyClass.label}</span>` : '';
+    const dateHtml = t.due_date ? `<div class="todo-mini-date">${formatDate(t.due_date)}</div>` : '';
+    return `
+    <div class="todo-mini ${urgencyClass ? urgencyClass.card : ''}">
+      <div class="todo-mini-content">
+        <div class="todo-mini-title">${esc(t.title)}</div>
+        ${dateHtml}
+      </div>
+      ${badgeHtml}
+    </div>`;
+  }).join('');
+}
+
+function getUrgencyClass(todo, today) {
+  if (!todo.due_date) return null;
+  const diff = Math.round((new Date(todo.due_date + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+  if (diff < 0)  return { card: 'card-urgent', badge: 'badge-urgent', label: 'Dépassé' };
+  if (diff === 0) return { card: 'card-warn', badge: 'badge-warn', label: "Aujourd'hui" };
+  if (diff <= 2)  return { card: 'card-soon', badge: 'badge-soon', label: `J+${diff}` };
+  return null;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+// ===== CONVERTISSEUR DE DEVISES =====
+const RATES = {
+  USD: 1.08,
+  GBP: 0.856,
+  IDR: 17500,
+};
+
+const CURRENCIES = [
+  { code: 'USD', flag: '🇺🇸', name: 'Dollar US' },
+  { code: 'GBP', flag: '🇬🇧', name: 'Livre sterling' },
+  { code: 'IDR', flag: '🇮🇩', name: 'Roupie indonésienne' },
+];
+
+let currencyDirection = 'from_eur';
+let selectedCurrency = 'USD';
+let dropdownOpen = false;
+
+function buildDropdown() {
+  const dd = document.getElementById('currency-dropdown');
+  dd.innerHTML = CURRENCIES.map((c, i) => `
+    ${i > 0 ? '<div class="currency-dropdown-sep"></div>' : ''}
+    <button class="currency-dropdown-item ${c.code === selectedCurrency ? 'selected' : ''}" data-code="${c.code}">
+      <span class="currency-dropdown-flag">${c.flag}</span>
+      <span>${c.flag} ${c.code} · ${c.name}</span>
+    </button>`).join('');
+  dd.querySelectorAll('.currency-dropdown-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedCurrency = btn.dataset.code;
+      closeDropdown();
+      updateSelectorBtn();
+      updateCurrency();
+    });
+  });
+}
+
+function updateSelectorBtn() {
+  const c = CURRENCIES.find(x => x.code === selectedCurrency);
+  document.getElementById('currency-selector-flag').textContent = c.flag;
+  document.getElementById('currency-selector-code').textContent = c.code;
+}
+
+function openDropdown() {
+  buildDropdown();
+  document.getElementById('currency-dropdown').classList.add('open');
+  document.getElementById('currency-selector-btn').classList.add('open');
+  dropdownOpen = true;
+  setTimeout(() => document.addEventListener('click', closeDropdownOutside, { once: true }), 0);
+}
+
+function closeDropdown() {
+  document.getElementById('currency-dropdown').classList.remove('open');
+  document.getElementById('currency-selector-btn').classList.remove('open');
+  dropdownOpen = false;
+}
+
+function closeDropdownOutside(e) {
+  if (!document.getElementById('currency-selector-wrap')?.contains(e.target)) closeDropdown();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('currency-selector-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownOpen ? closeDropdown() : openDropdown();
+  });
+  document.getElementById('currency-input').addEventListener('input', updateCurrency);
+  updateCurrency();
+});
+
+function setDirection(dir) {
+  currencyDirection = dir;
+  document.getElementById('toggle-from-eur').classList.toggle('active', dir === 'from_eur');
+  document.getElementById('toggle-to-eur').classList.toggle('active', dir === 'to_eur');
+  document.getElementById('currency-from-label').textContent = dir === 'from_eur' ? 'EUR' : selectedCurrency;
+  updateCurrency();
+}
+
+function formatAmount(val, code) {
+  if (code === 'IDR') return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(val);
+  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+}
+
+function updateCurrency() {
+  const raw = parseFloat(document.getElementById('currency-input').value);
+  const result = document.getElementById('currency-result');
+  if (isNaN(raw) || raw < 0) { result.innerHTML = ''; return; }
+
+  const c = CURRENCIES.find(x => x.code === selectedCurrency);
+  document.getElementById('currency-from-label').textContent = currencyDirection === 'from_eur' ? 'EUR' : c.code;
+
+  let converted, rateStr, targetCode;
+  if (currencyDirection === 'from_eur') {
+    converted = raw * RATES[c.code];
+    rateStr = `1 EUR = ${formatAmount(RATES[c.code], c.code)} ${c.code}`;
+    targetCode = c.code;
+  } else {
+    converted = raw / RATES[c.code];
+    rateStr = `1 ${c.code} = ${formatAmount(1 / RATES[c.code], 'EUR')} EUR`;
+    targetCode = 'EUR';
+  }
+
+  result.innerHTML = `
+    <div class="currency-result-single">
+      <div class="currency-result-left">
+        <div class="currency-result-flag">${currencyDirection === 'from_eur' ? c.flag : '🇪🇺'}</div>
+        <div class="currency-result-info">
+          <div class="currency-result-label">${targetCode}</div>
+          <div class="currency-result-rate">${rateStr}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="currency-result-amount">${formatAmount(converted, targetCode)}</div>
+        <div class="currency-result-code">${targetCode}</div>
+      </div>
+    </div>`;
+}
+
+// ===== AUTH =====
+const _h = 'ddd8e6a5e12393a372e260ec4e301c6e65025c70f6c8bdd62c820c9b0986c87e';
+const _s = 'tm_auth_v1';
+const _d = 30 * 24 * 60 * 60 * 1000;
+
+async function _hash(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str+'tm2024'));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkAuth() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(_s)||'null');
+    if (stored && stored.h===_h && Date.now()<stored.exp) {
+      document.getElementById('pw-screen').classList.add('hidden');
+      return true;
+    }
+  } catch(_) {}
+  return false;
+}
+
+async function tryPassword() {
+  const val = document.getElementById('pw-input').value;
+  const input = document.getElementById('pw-input');
+  const err = document.getElementById('pw-error');
+  if (!val) return;
+  const h = await _hash(val);
+  if (h === _h) {
+    localStorage.setItem(_s, JSON.stringify({ h:_h, exp:Date.now()+_d }));
+    document.getElementById('pw-screen').classList.add('hidden');
+    init();
+  } else {
+    input.classList.add('error');
+    err.textContent = 'Mot de passe incorrect';
+    input.value = '';
+    setTimeout(() => { input.classList.remove('error'); err.textContent=''; }, 2000);
+  }
+}
+
+document.getElementById('pw-btn').addEventListener('click', tryPassword);
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key==='Enter') tryPassword(); });
+
+// ===== INIT =====
+async function init() {
+  initDateHeader();
+
+  const { data: tripsData, error: tripError } = await sb.from('trips').select('id, name').order('name', { ascending: true });
+  if (logError('Chargement du voyage', tripError)) {
+    hideLoader();
+    return;
+  }
+  trips = tripsData || [];
+  if (trips.length === 0) {
+    hideLoader();
+    document.getElementById('event-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">🗺️</div>Aucun voyage trouvé</div>`;
+    document.getElementById('todo-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun voyage trouvé</div>`;
+    document.getElementById('trip-selector').innerHTML = '<option>Aucun voyage</option>';
+    updateCurrency();
+    return;
+  }
+
+  const storedTripId = getStoredTripId();
+  const selectedTrip = trips.find(t => t.id === storedTripId) || trips[0];
+  setSelectedTrip(selectedTrip.id);
+  renderTripSelector();
+
+  await Promise.all([
+    loadTodayEvents(),
+    loadTodayTodos(),
+  ]);
+
+  updateCurrency();
+  hideLoader();
+  setupRealtime();
+}
+
+document.getElementById('trip-selector').addEventListener('change', async e => {
+  const nextTripId = e.target.value;
+  if (!nextTripId || nextTripId === tripId) return;
+  if (homeRealtimeChannel) {
+    sb.removeChannel(homeRealtimeChannel);
+    homeRealtimeChannel = null;
+  }
+  setSelectedTrip(nextTripId);
+  updateTripColor();
+  clearHomeData();
+  await Promise.all([loadTodayEvents(), loadTodayTodos()]);
+  setupRealtime();
+  showToast('Voyage changé');
+});
+
+function setupRealtime() {
+  if (homeRealtimeChannel || !tripId) return;
+  homeRealtimeChannel = sb.channel('tripmate-home')
+    .on('postgres_changes', { event:'*', schema:'public', table:'days', filter:`trip_id=eq.${tripId}` }, refreshHomeData)
+    .on('postgres_changes', { event:'*', schema:'public', table:'events' }, refreshHomeData)
+    .on('postgres_changes', { event:'*', schema:'public', table:'todos', filter:`trip_id=eq.${tripId}` }, refreshHomeData)
+    .subscribe();
+}
+
+let refreshTimer = null;
+function refreshHomeData() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    loadTodayEvents();
+    loadTodayTodos();
+  }, 120);
+}
+
+checkAuth().then(ok => { if (ok) init(); });
+</script>
+</body>
+</html>
