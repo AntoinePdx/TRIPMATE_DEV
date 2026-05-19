@@ -384,6 +384,34 @@ function updateNavLinks() {
   const qs = tripId ? `?trip_id=${encodeURIComponent(tripId)}` : '';
   document.getElementById('nav-itinerary').href = 'tripmate_itineraire_deV3.html' + qs;
   document.getElementById('nav-todos').href = 'tripmate_todo_deV1.html' + qs;
+  const mapsEl = document.getElementById('nav-maps');
+  if (mapsEl) {
+    // temporary placeholder while we fetch the real link from Supabase
+    mapsEl.href = 'javascript:void(0)';
+    loadMapLinkForTrip(tripId);
+  }
+}
+
+async function loadMapLinkForTrip(id) {
+  if (!id) return;
+  try {
+    const { data, error } = await sb.from('trips').select('google_map_url').eq('id', id).single();
+    if (error) {
+      console.warn('loadMapLinkForTrip error', error);
+      return;
+    }
+    const a = document.getElementById('nav-maps');
+    if (!a) return;
+    if (data?.google_map_url) {
+      a.href = data.google_map_url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+    } else {
+      a.removeAttribute('href');
+    }
+  } catch (err) {
+    console.error('loadMapLinkForTrip exception', err);
+  }
 }
 
 function renderTripSelector() {
