@@ -414,6 +414,46 @@ async function loadMapLinkForTrip(id) {
   }
 }
 
+// ===== OPEN MAP IN NATIVE APP (Android/iOS) =====
+function openMapInApp(url) {
+  if (!url || typeof url !== 'string') { showToast('Lien de carte indisponible'); return; }
+  if (!/^https?:\/\//i.test(url)) { window.open(url, '_blank', 'noopener'); return; }
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  if (isAndroid) {
+    const fallback = encodeURIComponent(url);
+    const withoutProto = url.replace(/^https?:\/\//i, '');
+    const intentUrl = `intent://${withoutProto}#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=${fallback};end`;
+    window.location.href = intentUrl;
+    setTimeout(() => { window.location.href = url; }, 1500);
+    return;
+  }
+
+  if (isIOS) {
+    const scheme = 'comgooglemaps://?q=' + encodeURIComponent(url);
+    window.location = scheme;
+    setTimeout(() => { window.location = url; }, 1500);
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener');
+}
+
+// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native
+document.addEventListener('click', function(e) {
+  const el = e.target.closest && e.target.closest('#nav-maps');
+  if (!el) return;
+  e.preventDefault();
+  const url = el.href || el.dataset.mapUrl || '';
+  if (!url || url.startsWith('javascript:')) {
+    showToast('Carte non disponible pour ce voyage');
+    return;
+  }
+  openMapInApp(url);
+});
+
 function renderTripSelector() {
   const selector = document.getElementById('trip-selector');
   selector.innerHTML = trips.map((trip, index) => {
