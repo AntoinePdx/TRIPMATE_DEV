@@ -1,0 +1,2323 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>TripMate ✈</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#570317" />
+<meta name="apple-mobile-web-app-title" content="TripMate" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+.tl-card, .tl-card-inner {
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:root {
+  --brand:         #570317;
+  --brand-pale:    #f9e5ea;
+  --text-1:        #1a1a1a;
+  --text-2:        #5a5a5a;
+  --text-3:        #9a9a9a;
+  --bg-0:          #ffffff;
+  --bg-1:          #f7f7f6;
+  --bg-2:          #f0efed;
+  --border:        rgba(0,0,0,0.08);
+  --border-hard:   rgba(0,0,0,0.14);
+  --success:       #1a7a4a;
+  --success-bg:    #edf7f2;
+  --meal-midi:     #e8f4e8;
+  --meal-midi-c:   #2d6a2d;
+  --meal-gouter:   #fff0e0;
+  --meal-gouter-c: #a05000;
+  --meal-soir:     #e8eaf6;
+  --meal-soir-c:   #3949ab;
+  --r-sm:          8px;
+  --font:          'DM Sans', sans-serif;
+  --mono:          'DM Mono', monospace;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-1);
+  color: var(--text-1);
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center;
+}
+.app {
+  width: 100%; max-width: 430px;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+  background: var(--bg-1);
+}
+
+/* ===== LOADER ===== */
+.loader-screen {
+  position: fixed; inset: 0; background: var(--bg-0);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 998; gap: 16px; transition: opacity .3s;
+}
+.loader-screen.hidden { opacity: 0; pointer-events: none; }
+.loader-emoji { font-size: 36px; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.92)} }
+.loader-text { font-size: 14px; color: var(--text-3); }
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  background: var(--bg-0);
+  border-bottom: 0.5px solid var(--border);
+  padding: 12px 14px 0;
+  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 10;
+}
+.top-bar-row1 {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 12px;
+}
+.top-bar-title { display: flex; flex-direction: column; gap: 0px; position: relative; }
+.top-bar-title-main { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-1); }
+.top-bar-title-sub  { font-size: 9px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); }
+.brand-home-link { position: absolute; inset: -4px -8px; z-index: 2; border-radius: 8px; text-indent: -9999px; overflow: hidden; }
+.top-bar-actions { display: flex; align-items: center; gap: 8px; }
+.trip-switcher { display: inline-flex; align-items: center; gap: 7px; max-width: 124px; padding: 5px 9px; border-radius: 20px; background: var(--brand-pale); color: var(--brand); }
+.trip-chip-marker { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); flex-shrink: 0; }
+.trip-selector { min-width: 0; max-width: 88px; border: none; background: transparent; color: var(--brand); font-family: var(--font); font-size: 11px; font-weight: 700; padding: 0 10px 0 0; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer; }
+
+.btn-icon {
+  width: 34px; height: 34px; border-radius: 50%; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; transition: opacity .15s, background .12s; flex-shrink: 0;
+}
+.btn-icon:active { opacity: .75; }
+.btn-add-main {
+  padding: 7px 14px; border-radius: 20px;
+  border: 0.5px solid var(--border-hard);
+  background: var(--brand); color: #fff;
+  font-size: 13px; font-weight: 500; font-family: var(--font);
+  cursor: pointer; white-space: nowrap; transition: background .12s;
+}
+.btn-add-main:active { opacity: .85; }
+
+/* ===== ONGLETS JOURS ===== */
+.day-tabs-wrap {
+  display: flex; align-items: center; gap: 0;
+  margin: 0 -14px;
+  padding: 0 14px;
+}
+.day-tabs {
+  display: flex; gap: 4px;
+  overflow-x: auto; flex: 1;
+  scrollbar-width: none; padding-bottom: 10px;
+  scroll-behavior: smooth;
+}
+.day-tabs::-webkit-scrollbar { display: none; }
+
+.day-tab {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 0.5px solid var(--border-hard);
+  background: var(--bg-1);
+  font-size: 12px; font-weight: 500;
+  font-family: var(--font); color: var(--text-2);
+  cursor: pointer; white-space: nowrap;
+  transition: all .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.day-tab.active {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+
+.day-tab-label { font-size: 12px; font-weight: 600; }
+.day-tab-date  { font-size: 9px; opacity: .75; }
+
+.day-menu-btn {
+  flex-shrink: 0; width: 30px; height: 30px;
+  border-radius: 50%; border: 0.5px solid var(--border-hard);
+  background: var(--bg-1); color: var(--text-2);
+  font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: 6px; margin-bottom: 10px;
+  transition: background .12s;
+}
+.day-menu-btn:active { background: var(--bg-2); }
+
+/* ===== MENU CONTEXTUEL JOURS ===== */
+.day-ctx-menu {
+  position: fixed; z-index: 50;
+  background: var(--bg-0);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  overflow: hidden; min-width: 200px;
+  opacity: 0; pointer-events: none;
+  transform: scale(.92); transform-origin: top right;
+  transition: opacity .15s, transform .15s;
+}
+.day-ctx-menu.open { opacity: 1; pointer-events: all; transform: scale(1); }
+.day-ctx-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; font-size: 14px; font-weight: 500;
+  color: var(--text-1); cursor: pointer; border: none;
+  background: none; width: 100%; font-family: var(--font);
+  transition: background .1s; text-align: left;
+}
+.day-ctx-item:active { background: var(--bg-1); }
+.day-ctx-item.danger { color: #c0392b; }
+.day-ctx-sep { height: 0.5px; background: var(--border); margin: 0 16px; }
+.day-ctx-icon { font-size: 16px; width: 20px; text-align: center; }
+
+/* ===== SCROLL ===== */
+.scroll {
+  flex: 1; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 14px 100px;
+}
+
+/* ===== TIMELINE ===== */
+.timeline { display: flex; flex-direction: column; }
+.tl-row {
+  display: flex; position: relative; transition: opacity .15s;
+}
+.tl-row.dragging { opacity: .35; }
+.tl-row.drag-over-top .tl-card    { box-shadow: 0 -2px 0 var(--brand); }
+.tl-row.drag-over-bottom .tl-card { box-shadow: 0 2px 0 var(--brand); }
+.tl-row.drag-unavailable .tl-card {
+  opacity: .42; filter: grayscale(.35);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.item-new { animation: fadeIn .22s ease; }
+
+.tl-spine {
+  width: 54px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+}
+.tl-time {
+  font-size: 11px; font-family: var(--mono);
+  color: var(--text-3); padding-top: 16px; white-space: nowrap;
+}
+.tl-dot-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  flex: 1; margin-top: 4px;
+}
+.tl-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--brand); border: 2.5px solid var(--bg-1);
+  box-shadow: 0 0 0 2px var(--brand); flex-shrink: 0;
+}
+.tl-dot.done { background: #bbb; box-shadow: 0 0 0 2px #bbb; }
+.tl-line {
+  width: 2px; flex: 1; min-height: 12px;
+  background: var(--border); margin: 3px 0 0;
+}
+.tl-line.done { background: #ddd; }
+
+/* ===== CARD ===== */
+.tl-card-wrap {
+  flex: 1; padding: 10px 0 10px 10px; min-width: 0;
+}
+.tl-card-inner {
+  position: relative; width: 100%;
+  border-radius: var(--r-sm);
+}
+
+.tl-card {
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  background: var(--bg-0);
+  border: 0.5px solid var(--border);
+  position: relative;
+  user-select: none; -webkit-user-select: none;
+}
+.tl-card.is-done .tl-card-content { opacity: .32; filter: grayscale(0.4); }
+
+.tl-separator {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 0 6px 54px;
+  font-size: 10px; font-weight: 700; letter-spacing: .10em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.tl-separator::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(to right, var(--border-hard), transparent);
+  margin-right: 4px;
+}
+
+/* ===== MEAL TYPE SELECTOR ===== */
+.meal-type-row { display: flex; gap: 6px; margin-bottom: 2px; }
+.meal-type-pill {
+  flex: 1; padding: 9px 4px; border-radius: var(--r-sm);
+  border: 1px solid var(--border-hard); background: var(--bg-1);
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  color: var(--text-2); cursor: pointer; text-align: center;
+  transition: all .15s; line-height: 1.3;
+}
+.meal-type-pill span { display: block; font-size: 16px; margin-bottom: 2px; }
+.meal-type-pill.active {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
+
+/* ===== MENUS CONTEXTUELS ===== */
+.day-ctx-menu, .ev-ctx-menu, .meal-ctx-menu, .hotel-ctx-menu {
+  position: fixed; background: var(--bg-0);
+  box-shadow: 0 6px 28px rgba(0,0,0,.18), 0 0 0 0.5px var(--border-hard);
+  overflow: hidden; opacity: 0; pointer-events: none;
+  transform-origin: top right;
+}
+.day-ctx-menu { z-index: 50; border-radius: 14px; min-width: 200px; transform: scale(.92); transition: opacity .15s, transform .15s; }
+.ev-ctx-menu, .meal-ctx-menu, .hotel-ctx-menu { z-index: 200; border-radius: 10px; min-width: 148px; transform: scale(.92) translateY(-4px); transition: opacity .12s, transform .12s; }
+.day-ctx-menu.open { opacity: 1; pointer-events: all; transform: scale(1); }
+.ev-ctx-menu.open, .meal-ctx-menu.open, .hotel-ctx-menu.open { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); }
+.day-ctx-item, .ev-ctx-item, .meal-ctx-item, .hotel-ctx-item {
+  display: flex; align-items: center; cursor: pointer; border: none;
+  background: none; width: 100%; font-family: var(--font);
+  text-align: left; color: var(--text-1); transition: background .1s;
+}
+.day-ctx-item { gap: 12px; padding: 13px 16px; font-size: 14px; font-weight: 500; }
+.ev-ctx-item, .meal-ctx-item, .hotel-ctx-item { gap: 10px; padding: 10px 12px; font-size: 12.5px; font-weight: 500; }
+.day-ctx-item:active, .ev-ctx-item:active, .meal-ctx-item:active, .hotel-ctx-item:active { background: var(--bg-1); }
+.day-ctx-item.danger, .ev-ctx-item.danger, .meal-ctx-item.danger, .hotel-ctx-item.danger { color: #c0392b; }
+.day-ctx-sep, .ev-ctx-sep, .meal-ctx-sep, .hotel-ctx-sep { height: 0.5px; background: var(--border); }
+.day-ctx-sep { margin: 0 16px; }
+.ev-ctx-sep, .meal-ctx-sep, .hotel-ctx-sep { margin: 0 14px; }
+
+/* Bouton ··· unifié (events, repas, hôtel) */
+.more-btn, .ev-more-btn, .meal-item-more, .hotel-more-btn {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  border: 0; background: transparent; color: #a4a0aa;
+  font-size: 13px; cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s, box-shadow .12s;
+  font-family: var(--font); letter-spacing: .5px; padding: 0;
+}
+.more-btn:active, .ev-more-btn:active, .meal-item-more:active, .hotel-more-btn:active {
+  background: var(--bg-2); color: var(--text-1);
+  box-shadow: inset 0 0 0 0.5px var(--border-hard);
+}
+
+.tl-card, .meal-item-row { touch-action: pan-y; }
+.tl-card.long-press-ready, .meal-item-row.long-press-ready { background: var(--brand-pale); }
+
+.tl-card-main {
+  display: flex; align-items: flex-start;
+}
+.tl-card-content { flex: 1; min-width: 0; }
+
+.tl-card-head {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 8px;
+}
+.tl-ev-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--text-1); line-height: 1.3;
+  flex: 1; min-width: 0;
+}
+.tl-ev-title.done { text-decoration: line-through; color: var(--text-3); }
+
+.tl-ev-address {
+  margin-top: 6px; font-size: 12px; color: var(--text-2);
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.tl-ev-note {
+  margin-top: 7px; padding-top: 7px;
+  border-top: 0.5px solid var(--border);
+  font-size: 12px; color: var(--text-3);
+  font-style: italic; line-height: 1.5;
+}
+
+.gps-link {
+  color: var(--brand); text-decoration: none;
+  font-weight: 500; font-size: 12px; white-space: nowrap;
+}
+.gps-link:hover { text-decoration: underline; }
+
+/* BADGES CRÉNEAU — compacts */
+.slot-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: .02em;
+  white-space: nowrap; cursor: pointer;
+  transition: opacity .15s; position: relative;
+}
+.slot-badge:active { opacity: .7; }
+.slot-matin { background: #fff8e1; color: #b7740a; }
+.slot-aprem { background: #fff3e0; color: #b85c00; }
+.slot-soir  { background: #ede7f6; color: #5e35b1; }
+
+/* Mini menu déroulant créneau */
+.slot-picker {
+  position: fixed; z-index: 200;
+  background: var(--bg-0);
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 0 0 0.5px var(--border-hard);
+  overflow: hidden; min-width: 120px;
+  opacity: 0; pointer-events: none;
+  transform: scale(.92) translateY(-4px);
+  transform-origin: top left;
+  transition: opacity .12s, transform .12s;
+}
+.slot-picker.open { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); }
+.slot-picker-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 14px; font-size: 13px; font-weight: 500;
+  font-family: var(--font); cursor: pointer; border: none;
+  background: none; width: 100%; text-align: left; color: var(--text-1);
+  transition: background .1s;
+}
+.slot-picker-item:active { background: var(--bg-1); }
+.slot-picker-item.active { font-weight: 700; }
+.slot-picker-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-matin { background: #b7740a; }
+.dot-aprem { background: #b85c00; }
+.dot-soir  { background: #5e35b1; }
+
+.time-type-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.time-type-btn {
+  flex: 1; padding: 7px 4px; border-radius: var(--r-sm);
+  border: 1px solid var(--border-hard); background: var(--bg-1);
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  color: var(--text-2); cursor: pointer; text-align: center; transition: all .15s;
+}
+.time-type-btn.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.empty {
+  text-align: center; padding: 60px 24px; color: var(--text-3);
+}
+.empty-icon  { font-size: 40px; margin-bottom: 10px; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+.empty-sub   { font-size: 13px; line-height: 1.6; }
+
+/* ===== REPAS ===== */
+.meals-section {
+  margin-top: 18px; border-top: 1.5px dashed var(--border-hard); padding-top: 14px;
+}
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;
+}
+.meals-section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.btn-add-meal {
+  padding: 5px 12px; border-radius: 20px;
+  border: 0.5px solid var(--border-hard);
+  background: var(--bg-2); color: var(--text-2);
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  cursor: pointer; white-space: nowrap; transition: background .12s;
+}
+.btn-add-meal:active { background: var(--border); }
+.meals-grid { display: flex; flex-direction: column; gap: 8px; }
+.meal-item-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-0); border-radius: var(--r-sm);
+  border: 0.5px solid var(--border); padding: 10px 12px;
+  cursor: pointer; transition: background .12s; position: relative;
+}
+.meal-item-row:active { background: var(--bg-2); }
+.meal-item-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; background: var(--meal-midi);
+}
+.meal-item-body { flex: 1; min-width: 0; }
+.meal-item-label { font-size: 11px; font-weight: 600; color: var(--text-3); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.meal-item-name  { font-size: 13px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-item-addr  { font-size: 11px; color: var(--text-3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-item-row.meal-dragging { opacity: .35; }
+.meal-item-row.meal-drag-over-top    { box-shadow: 0 -2px 0 var(--brand); }
+.meal-item-row.meal-drag-over-bottom { box-shadow: 0 2px 0 var(--brand); }
+
+/* ===== HÔTEL ===== */
+.hotel-section {
+  margin-top: 14px; border-top: 1.5px dashed var(--border-hard); padding-top: 14px;
+}
+.hotel-card {
+  background: var(--bg-0); border: 1px solid #c9b8d8;
+  border-radius: var(--r-sm); padding: 14px;
+}
+.hotel-card-head { display: flex; align-items: flex-start; gap: 10px; }
+.hotel-icon {
+  width: 36px; height: 36px; border-radius: 8px; background: #ede7f6;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.hotel-name { font-size: 14px; font-weight: 600; color: var(--text-1); flex: 1; line-height: 1.3; }
+.hotel-sub  { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.hotel-address {
+  margin-top: 8px; font-size: 12px; color: var(--text-2);
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.hotel-note {
+  margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border);
+  font-size: 12px; color: var(--text-3); font-style: italic;
+}
+
+/* ===== DÉPLACER VERS UN AUTRE JOUR ===== */
+#move-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+#move-overlay.open { opacity: 1; pointer-events: all; }
+#move-sheet {
+  width: 100%; max-width: 430px; margin: 0 auto;
+  background: var(--bg-0); border-radius: 18px 18px 0 0;
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  max-height: 70dvh; display: flex; flex-direction: column;
+}
+#move-overlay.open #move-sheet { transform: translateY(0); }
+.move-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border-hard); margin: 12px auto 0;
+}
+.move-sheet-title {
+  font-size: 12px; font-weight: 700; color: var(--text-2);
+  padding: 12px 18px 8px; letter-spacing: .04em; text-transform: uppercase;
+}
+.move-day-list {
+  overflow-y: auto; padding: 4px 12px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.move-day-btn {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-radius: var(--r-sm);
+  border: 0.5px solid var(--border-hard);
+  background: var(--bg-1); cursor: pointer;
+  font-size: 13px; font-weight: 500; font-family: var(--font);
+  color: var(--text-1); transition: background .12s;
+}
+.move-day-btn:active { background: var(--border); }
+.move-day-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.move-day-label { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.move-day-slot { font-size: 11px; color: var(--text-3); }
+.move-day-btn-date { font-size: 11px; color: var(--text-3); }
+.hotel-empty {
+  border: 1.5px dashed #c9b8d8; background: #faf8fd;
+  border-radius: var(--r-sm); padding: 20px;
+  text-align: center; cursor: pointer; color: #7e57c2;
+  font-size: 13px; transition: background .15s;
+}
+.hotel-empty:active { background: #f3eaff; }
+.hotel-empty-icon { font-size: 26px; margin-bottom: 6px; }
+.hotel-empty-text { font-weight: 500; }
+.hotel-empty-sub  { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+/* ===== MODALES ===== */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+.sheet {
+  background: var(--bg-0); border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 430px;
+  padding: 0 18px calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.34,1.2,.64,1);
+  max-height: 92dvh; overflow-y: auto;
+}
+.overlay.open .sheet { transform: translateY(0); }
+.sheet-handle {
+  width: 36px; height: 4px; background: var(--border-hard);
+  border-radius: 2px; margin: 14px auto 18px; flex-shrink: 0;
+}
+.sheet-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.field { margin-bottom: 13px; }
+.field-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 5px;
+}
+.field-input, .field-textarea {
+  width: 100%; background: var(--bg-1); border: 0.5px solid var(--border-hard);
+  border-radius: var(--r-sm); padding: 10px 13px;
+  font-size: 16px; font-family: var(--font); color: var(--text-1);
+  outline: none; transition: border-color .15s; appearance: none; -webkit-appearance: none;
+}
+.field-input:focus, .field-textarea:focus { border-color: var(--brand); }
+.field-textarea { resize: vertical; min-height: 68px; }
+.field-input.error { border-color: #e74c3c; }
+.sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-cancel {
+  flex: 1; padding: 13px; border-radius: var(--r-sm);
+  border: none; background: none;
+  font-size: 14px; font-weight: 500; font-family: var(--font);
+  color: var(--text-3); cursor: pointer; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.btn-save {
+  flex: 2; padding: 13px; border-radius: var(--r-sm);
+  border: none; background: var(--brand); color: #fff;
+  font-size: 14px; font-weight: 600; font-family: var(--font);
+  cursor: pointer; transition: opacity .15s;
+}
+.btn-save:active { opacity: .85; }
+
+/* ===== CONFIRM ===== */
+.confirm-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .18s; padding: 24px;
+}
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-box {
+  background: var(--bg-0); border-radius: 16px;
+  padding: 24px 20px 16px; width: 100%; max-width: 320px;
+  transform: scale(.92); transition: transform .18s cubic-bezier(.34,1.4,.64,1);
+  text-align: center;
+}
+.confirm-overlay.open .confirm-box { transform: scale(1); }
+.confirm-icon  { font-size: 30px; margin-bottom: 12px; }
+.confirm-title { font-size: 15px; font-weight: 600; color: var(--text-1); margin-bottom: 6px; }
+.confirm-msg   { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.confirm-actions { display: flex; gap: 10px; margin-top: 20px; }
+.confirm-btn {
+  flex: 1; padding: 12px; border-radius: var(--r-sm);
+  border: 0.5px solid var(--border-hard); background: var(--bg-1);
+  font-size: 14px; font-weight: 500; font-family: var(--font); color: var(--text-2); cursor: pointer;
+}
+.confirm-btn.danger { background: #c0392b; border-color: #c0392b; color: #fff; }
+
+/* ===== MEAL MODAL ===== */
+.meal-type-select { display: flex; gap: 6px; margin-bottom: 10px; }
+.meal-type-btn {
+  flex: 1; padding: 8px 4px; border-radius: var(--r-sm);
+  border: 1px solid var(--border-hard); background: var(--bg-1);
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  color: var(--text-2); cursor: pointer; text-align: center; transition: all .15s;
+}
+.meal-type-btn.active { color: #fff; border-color: transparent; }
+.meal-type-btn[data-meal="midi"].active   { background: var(--meal-midi-c); }
+.meal-type-btn[data-meal="gouter"].active { background: var(--meal-gouter-c); }
+.meal-type-btn[data-meal="soir"].active   { background: var(--meal-soir-c); }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s; white-space: nowrap; z-index: 300;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== DATE EDIT ===== */
+.date-edit-btn {
+  font-size: 10px; color: var(--brand); background: none; border: none;
+  cursor: pointer; font-family: var(--font); font-weight: 500;
+  padding: 1px 4px; border-radius: 4px;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+
+/* ===== MOT DE PASSE ===== */
+.pw-screen {
+  position: fixed; inset: 0; background: var(--bg-1);
+  z-index: 9999; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 32px;
+}
+.pw-screen.hidden { display: none; }
+.pw-logo  { font-size: 48px; margin-bottom: 12px; }
+.pw-title { font-size: 22px; font-weight: 600; color: var(--text-1); margin-bottom: 4px; }
+.pw-sub   { font-size: 14px; color: var(--text-3); margin-bottom: 32px; }
+.pw-box {
+  width: 100%; max-width: 320px; background: var(--bg-0);
+  border-radius: 16px; padding: 24px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+.pw-input {
+  width: 100%; background: var(--bg-1); border: 0.5px solid var(--border-hard);
+  border-radius: var(--r-sm); padding: 13px 16px;
+  font-size: 16px; font-family: var(--font); color: var(--text-1);
+  outline: none; transition: border-color .15s; appearance: none; -webkit-appearance: none;
+  margin-bottom: 12px; letter-spacing: 0.05em;
+}
+.pw-input:focus { border-color: var(--brand); }
+.pw-input.error { border-color: #e74c3c; animation: shake .3s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.pw-btn {
+  width: 100%; padding: 14px; border-radius: var(--r-sm); border: none;
+  background: var(--brand); color: #fff; font-size: 15px; font-weight: 600;
+  font-family: var(--font); cursor: pointer; transition: opacity .15s;
+}
+.pw-btn:active { opacity: .85; }
+.pw-error { font-size: 12px; color: #e74c3c; text-align: center; margin-top: 10px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<!-- MOT DE PASSE -->
+<div class="pw-screen" id="pw-screen">
+  <div class="pw-logo">✈️</div>
+  <div class="pw-title">TripMate</div>
+  <div class="pw-sub">Votre carnet de voyage privé</div>
+  <div class="pw-box">
+    <input class="pw-input" type="password" id="pw-input" placeholder="Mot de passe" autocomplete="current-password" />
+    <button class="pw-btn" id="pw-btn">Accéder</button>
+    <div class="pw-error" id="pw-error"></div>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div class="loader-screen" id="loader">
+  <div class="loader-emoji">✈️</div>
+  <div class="loader-text">Chargement du voyage…</div>
+</div>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-bar-row1">
+      <div class="top-bar-title">
+        <a class="brand-home-link" href="tripmate_accueil_deV1.html" title="Accueil">Accueil</a>
+        <span class="top-bar-title-main">TripMate ✈</span>
+        <span class="top-bar-title-sub">by Lenscape</span>
+      </div>
+      <div class="top-bar-actions">
+        <div class="trip-switcher"><span class="trip-chip-marker" id="trip-color-dot"></span><select class="trip-selector" id="trip-selector" aria-label="Choisir un voyage"></select></div>
+        <button class="btn-add-main" id="btn-add" title="Ajouter une activité">+ Activité</button>
+      </div>
+    </div>
+    <!-- Onglets jours -->
+    <div class="day-tabs-wrap">
+      <div class="day-tabs" id="day-tabs"></div>
+      <button class="day-menu-btn" id="day-menu-btn" title="Options du jour">···</button>
+    </div>
+  </div>
+
+  <div class="scroll" id="main-scroll">
+    <div class="timeline" id="timeline"></div>
+    <div class="empty" id="empty" style="display:none">
+      <div class="empty-icon">🗺</div>
+      <div class="empty-title">Aucune activité</div>
+      <div class="empty-sub">Appuyez sur <strong>+</strong> pour ajouter<br>votre première activité.</div>
+    </div>
+    <div class="meals-section">
+      <div class="meals-section-header">
+        <div class="section-label" style="margin-bottom:0">🍽️ Repas du jour</div>
+        <button class="btn-add-meal" id="btn-add-meal">+ Ajouter</button>
+      </div>
+      <div class="meals-grid" id="meals-grid"></div>
+    </div>
+    <div class="hotel-section">
+      <div class="section-label">🏨 Hébergement du soir</div>
+      <div id="hotel-block"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MENU CONTEXTUEL JOURS -->
+<div class="day-ctx-menu" id="day-ctx-menu">
+  <button class="day-ctx-item" id="ctx-add-day">
+    <span class="day-ctx-icon">＋</span> Ajouter un jour
+  </button>
+  <div class="day-ctx-sep"></div>
+  <button class="day-ctx-item" id="ctx-edit-day">
+    <span class="day-ctx-icon">✏️</span> Modifier ce jour
+  </button>
+  <div class="day-ctx-sep"></div>
+  <button class="day-ctx-item danger" id="ctx-del-day">
+    <span class="day-ctx-icon">🗑</span> Supprimer ce jour
+  </button>
+</div>
+
+<!-- MODALE ACTIVITÉ -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-title">Nouvelle activité</div>
+    <div class="field">
+      <div class="field-label">Quand ?</div>
+      <div class="time-type-row">
+        <button class="time-type-btn active" data-slot="">Heure</button>
+        <button class="time-type-btn" data-slot="matin">Matin</button>
+        <button class="time-type-btn" data-slot="aprem">Après-midi</button>
+        <button class="time-type-btn" data-slot="soir">Soir</button>
+      </div>
+      <input class="field-input" type="time" id="f-time" />
+    </div>
+    <div class="field">
+      <div class="field-label">Titre *</div>
+      <input class="field-input" type="text" id="f-title" placeholder="Ex : Colisée · Visite guidée" />
+    </div>
+    <div class="field">
+      <div class="field-label">Adresse</div>
+      <input class="field-input" type="text" id="f-address" placeholder="Ex : Piazza del Colosseo, Roma" />
+    </div>
+    <div class="field">
+      <div class="field-label">Note (optionnel)</div>
+      <textarea class="field-textarea" id="f-note" placeholder="Infos pratiques, réservation…"></textarea>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="btn-cancel">Annuler</button>
+      <button class="btn-save" id="btn-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE HÔTEL -->
+<div class="overlay" id="hotel-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Hébergement du soir</div>
+    <div class="field">
+      <div class="field-label">Nom *</div>
+      <input class="field-input" type="text" id="h-name" placeholder="Ex : Hotel Eden Roma" />
+    </div>
+    <div class="field">
+      <div class="field-label">Check-in</div>
+      <input class="field-input" type="time" id="h-checkin" />
+    </div>
+    <div class="field">
+      <div class="field-label">Adresse</div>
+      <input class="field-input" type="text" id="h-address" placeholder="Ex : Via Ludovisi 49, Roma" />
+    </div>
+    <div class="field">
+      <div class="field-label">Note (optionnel)</div>
+      <textarea class="field-textarea" id="h-note" placeholder="Confirmation, code d'accès…"></textarea>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="hotel-btn-cancel">Annuler</button>
+      <button class="btn-save" id="hotel-btn-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE REPAS -->
+<div class="overlay" id="meal-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="meal-sheet-title">Ajouter un repas</div>
+    <div class="field">
+      <div class="field-label">Type de repas</div>
+      <div class="meal-type-row">
+        <button class="meal-type-pill active" data-mtype="Petit-dej"><span>🌅</span>Petit-dej</button>
+        <button class="meal-type-pill" data-mtype="Déjeuner"><span>🥗</span>Déjeuner</button>
+        <button class="meal-type-pill" data-mtype="Goûter"><span>🍰</span>Goûter</button>
+        <button class="meal-type-pill" data-mtype="Dîner"><span>🌙</span>Dîner</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">Nom du resto / lieu *</div>
+      <input class="field-input" type="text" id="m-name" placeholder="Ex : Trattoria da Mario" />
+    </div>
+    <div class="field">
+      <div class="field-label">Adresse</div>
+      <input class="field-input" type="text" id="m-address" placeholder="Ex : Via della Croce 10, Roma" />
+    </div>
+    <div class="field">
+      <div class="field-label">Note (résa, horaire…)</div>
+      <textarea class="field-textarea" id="m-note" placeholder="Réservation à 20h…"></textarea>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="meal-btn-cancel">Annuler</button>
+      <button class="btn-save" id="meal-btn-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE DATE / NOM DU JOUR -->
+<div class="overlay" id="date-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Modifier ce jour</div>
+    <div class="field">
+      <div class="field-label">Nom du jour</div>
+      <input class="field-input" type="text" id="d-label" placeholder="Ex : Jour 1 — Rome" />
+    </div>
+    <div class="field">
+      <div class="field-label">Date</div>
+      <input class="field-input" type="date" id="d-date" />
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="date-btn-cancel">Annuler</button>
+      <button class="btn-save" id="date-btn-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">🗑</div>
+    <div class="confirm-title" id="confirm-title">Supprimer ?</div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn" id="confirm-cancel">Annuler</button>
+      <button class="confirm-btn danger" id="confirm-ok">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MEAL CONTEXT MENU -->
+<div class="meal-ctx-menu" id="meal-ctx-menu">
+  <button class="meal-ctx-item" id="meal-ctx-edit"><span>✏️</span> Modifier</button>
+  <div class="meal-ctx-sep"></div>
+  <button class="meal-ctx-item danger" id="meal-ctx-del"><span>🗑</span> Supprimer</button>
+</div>
+
+<!-- HOTEL CONTEXT MENU -->
+<div class="hotel-ctx-menu" id="hotel-ctx-menu">
+  <button class="hotel-ctx-item" id="hotel-ctx-edit"><span>✏️</span> Modifier</button>
+  <div class="hotel-ctx-sep"></div>
+  <button class="hotel-ctx-item danger" id="hotel-ctx-del"><span>🗑</span> Supprimer</button>
+</div>
+
+<!-- EVENT CONTEXT MENU -->
+<div class="ev-ctx-menu" id="ev-ctx-menu">
+  <button class="ev-ctx-item" id="ev-ctx-edit"><span>✏️</span> Modifier</button>
+  <div class="ev-ctx-sep"></div>
+  <button class="ev-ctx-item" id="ev-ctx-done"><span id="ev-ctx-done-icon">✓</span> <span id="ev-ctx-done-label">Marquer fait</span></button>
+  <div class="ev-ctx-sep"></div>
+  <button class="ev-ctx-item" id="ev-ctx-move"><span>📅</span> Changer de jour</button>
+  <div class="ev-ctx-sep"></div>
+  <button class="ev-ctx-item danger" id="ev-ctx-del"><span>🗑</span> Supprimer</button>
+</div>
+
+<!-- MODAL DÉPLACER VERS UN AUTRE JOUR -->
+<div id="move-overlay">
+  <div id="move-sheet">
+    <div class="move-sheet-handle"></div>
+    <div class="move-sheet-title">Changer de jour</div>
+    <div class="move-day-list" id="move-day-list"></div>
+  </div>
+</div>
+
+
+<script>
+/* ============================================================
+   TRIPMATE v4 — Supabase + flip card + onglets scrollables
+   ============================================================ */
+
+const SUPABASE_URL = 'https://bqgrrzgfvkpxhkmaiumh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_SD2fV9dbbi8N3bV6FkcwtA_uFypC5BE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ---- ÉTAT ----
+let tripId    = null;
+let days      = [];
+let curDayIdx = 0;
+let events    = [];
+let hotel     = null;
+let editingId      = null;
+let activeSlot     = '';
+let editingMeal    = null;
+const TRIP_STORAGE_KEY = 'tm_selected_trip_id';
+let currentTrip = null;
+let trips = [];
+
+function getSelectedTripId() {
+  return new URLSearchParams(window.location.search).get('trip_id') || localStorage.getItem(TRIP_STORAGE_KEY);
+}
+
+function persistSelectedTripId(id) {
+  if (id) localStorage.setItem(TRIP_STORAGE_KEY, id);
+}
+
+function tripColor(trip) {
+  const colors = ['#570317', '#8d3f0f', '#1a7a4a', '#2c5fa3', '#6b4ca0', '#a05000', '#2f6f73', '#9f3a5b'];
+  const name = trip?.name || trip?.id || '';
+  const score = Array.from(name).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return colors[score % colors.length];
+}
+
+function renderTripSelector() {
+  const selector = document.getElementById('trip-selector');
+  if (!selector) return;
+  selector.innerHTML = trips.map((trip, index) => {
+    const label = trip.name || `Voyage ${index + 1}`;
+    return `<option value="${esc(trip.id)}" ${trip.id === tripId ? 'selected' : ''}>${esc(label)}</option>`;
+  }).join('');
+  updateTripColorDot();
+}
+
+function updateTripColorDot() {
+  const dot = document.getElementById('trip-color-dot');
+  if (!dot || !currentTrip) return;
+  dot.style.background = tripColor(currentTrip);
+}
+
+// ---- UTILS ----
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function gpsUrl(address) {
+  if (!address) return null;
+  const q = encodeURIComponent(address);
+  return 'https://www.google.com/maps/search/?api=1&query=' + q;
+}
+
+
+// Badge créneau compact
+const SLOT_LABELS = { matin:'Matin', aprem:'Ap-m', soir:'Soir' };
+function timeLabel(ev) {
+  if (ev.slot && SLOT_LABELS[ev.slot]) {
+    return `<span class="slot-badge slot-${ev.slot}">${SLOT_LABELS[ev.slot]}</span>`;
+  }
+  return `<span style="font-size:11px;font-family:var(--mono);color:var(--text-3);">${esc(ev.time||'--:--')}</span>`;
+}
+
+const GROUP_BASE = { matin: '03:', aprem: '13:', soir: '19:' };
+function sortKey(ev) {
+  const slot = effectiveSlot(ev);
+  const slotRank = { matin: 0, aprem: 1, soir: 2 }[slot] ?? 0;
+  const hasPosition = ev.position !== null && ev.position !== undefined;
+  const intraSlot = hasPosition
+    ? '0-' + String(ev.position).padStart(6, '0')
+    : '1-' + (ev.time || GROUP_BASE[slot] || '00:');
+  return String(slotRank) + '-' + intraSlot + '-' + String(ev.title || '');
+}
+function getSorted() { return events.slice().sort((a,b) => sortKey(a).localeCompare(sortKey(b))); }
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+}
+function formatDateLong(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+}
+
+// ---- TOAST ----
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function reportSupabaseError(action, error) {
+  if (!error) return false;
+  console.error(action, error);
+  showToast('Erreur : ' + (error.message || action));
+  return true;
+}
+
+// ---- LOADER ----
+function hideLoader() {
+  const l = document.getElementById('loader');
+  l.classList.add('hidden');
+  setTimeout(() => l.style.display = 'none', 350);
+}
+
+// ---- CONFIRM ----
+let confirmCallback = null;
+function openConfirm(icon, title, msg, cb) {
+  document.getElementById('confirm-icon').textContent  = icon;
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  confirmCallback = cb;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  confirmCallback = null;
+}
+document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
+document.getElementById('confirm-ok').addEventListener('click', () => {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
+});
+
+// ===== INIT =====
+async function init() {
+  const storedTripId = getSelectedTripId();
+  let { data: tripsData } = await sb.from('trips').select('id, name').order('name', { ascending: true });
+  trips = tripsData || [];
+  if (!trips || trips.length === 0) {
+    const { data } = await sb.from('trips').insert({ name: 'Mon voyage' }).select().single();
+    trips = [data];
+    tripId = data.id;
+    currentTrip = data;
+  } else {
+    currentTrip = trips.find(trip => trip.id === storedTripId) || trips[0];
+    tripId = currentTrip.id;
+  }
+  persistSelectedTripId(tripId);
+  renderTripSelector();
+  await loadDays();
+  hideLoader();
+  setupRealtime();
+}
+
+document.getElementById('trip-selector').addEventListener('change', e => {
+  const nextTripId = e.target.value;
+  if (!nextTripId || nextTripId === tripId) return;
+  persistSelectedTripId(nextTripId);
+  window.location.href = `tripmate_itineraire_deV3.html?trip_id=${encodeURIComponent(nextTripId)}`;
+});
+
+// ===== JOURS =====
+async function loadDays() {
+  const { data } = await sb.from('days')
+    .select('*').eq('trip_id', tripId)
+    .order('date', { ascending: true, nullsFirst: false })
+  days = data || [];
+  if (days.length === 0) { await addDay(); return; }
+  if (curDayIdx >= days.length) curDayIdx = days.length - 1;
+  await loadDay();
+  renderDayTabs();
+  render(); renderMeals(); renderHotel();
+}
+
+function sortDaysByDate() {
+  days.sort((a,b) => {
+    if (!a.date && !b.date) return (a.position||0)-(b.position||0);
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.localeCompare(b.date);
+  });
+}
+
+async function addDay() {
+  const n = days.length + 1;
+  // Calculer la date du prochain jour à partir du dernier jour avec une date
+  let nextDate = null;
+  const daysWithDate = days.filter(d => d.date).sort((a,b) => a.date.localeCompare(b.date));
+  if (daysWithDate.length > 0) {
+    const lastDate = new Date(daysWithDate[daysWithDate.length-1].date + 'T12:00:00');
+    lastDate.setDate(lastDate.getDate() + 1);
+    nextDate = lastDate.toISOString().split('T')[0];
+  }
+  const { data, error } = await sb.from('days').insert({
+    trip_id: tripId, label: `Jour ${n}`, date: nextDate, position: n
+  }).select().single();
+  if (reportSupabaseError('Ajout du jour impossible', error)) return;
+  days.push(data);
+  sortDaysByDate();
+  curDayIdx = days.findIndex(d => d.id === data.id);
+  await loadDay();
+  renderDayTabs();
+  render(); renderMeals(); renderHotel();
+  showToast(`Jour ${n} ajouté`);
+  // scroll vers le nouvel onglet
+  setTimeout(() => {
+    const tabs = document.getElementById('day-tabs');
+    tabs.scrollLeft = tabs.scrollWidth;
+  }, 100);
+}
+
+async function deleteCurrentDay() {
+  if (days.length === 1) { showToast('Impossible de supprimer le dernier jour'); return; }
+  const d = curDay();
+  openConfirm('🗓', `Supprimer ${d.label} ?`, 'Toutes les activités de ce jour seront perdues.', async () => {
+    const { error } = await sb.from('days').delete().eq('id', d.id);
+    if (reportSupabaseError('Suppression du jour impossible', error)) return;
+    days.splice(curDayIdx, 1);
+    if (curDayIdx >= days.length) curDayIdx = days.length - 1;
+    await loadDay();
+    renderDayTabs();
+    render(); renderMeals(); renderHotel();
+    showToast('Jour supprimé');
+  });
+}
+
+function curDay() { return days[curDayIdx] || days[0]; }
+
+async function loadDay() {
+  const d = curDay();
+  if (!d) return;
+  const [evRes, hotelRes, mealsRes] = await Promise.all([
+    sb.from('events').select('*').eq('day_id', d.id).order('position', { ascending: true, nullsFirst: false }),
+    sb.from('hotels').select('*').eq('day_id', d.id).maybeSingle(),
+    sb.from('meals').select('*').eq('day_id', d.id).order('position', { ascending: true, nullsFirst: false })
+  ]);
+  events = evRes.data || [];
+  hotel  = hotelRes.data || null;
+  mealsList = mealsRes.data || [];
+}
+
+async function switchDay(idx) {
+  curDayIdx = idx;
+  await loadDay();
+  renderDayTabs();
+  render(); renderMeals(); renderHotel();
+  document.getElementById('main-scroll').scrollTop = 0;
+}
+
+// ===== ONGLETS JOURS =====
+function renderDayTabs() {
+  const container = document.getElementById('day-tabs');
+  container.innerHTML = days.map((d, i) => {
+    const dateStr = d.date ? formatDateShort(d.date) : null;
+    return `
+    <button class="day-tab ${i === curDayIdx ? 'active' : ''}" data-day-idx="${i}">
+      <span class="day-tab-label">${esc(d.label || `Jour ${i+1}`)}</span>
+      ${dateStr ? `<span class="day-tab-date">${esc(dateStr)}</span>` : ''}
+    </button>`;
+  }).join('');
+
+  // Scroll vers l'onglet actif
+  setTimeout(() => {
+    const active = container.querySelector('.day-tab.active');
+    if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, 50);
+}
+
+document.getElementById('day-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.day-tab');
+  if (!tab) return;
+  switchDay(Number(tab.dataset.dayIdx));
+});
+
+const dayCtxMenu = document.getElementById('day-ctx-menu');
+let ctxOpen = false;
+
+document.getElementById('day-menu-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (ctxOpen) { closeDayMenu(); return; }
+  const btn  = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  dayCtxMenu.style.top   = (rect.bottom + 6) + 'px';
+  dayCtxMenu.style.right = (window.innerWidth - rect.right) + 'px';
+  dayCtxMenu.classList.add('open');
+  ctxOpen = true;
+});
+
+function closeDayMenu() {
+  dayCtxMenu.classList.remove('open');
+  ctxOpen = false;
+}
+
+document.addEventListener('click', e => {
+  if (ctxOpen && !dayCtxMenu.contains(e.target)) closeDayMenu();
+});
+
+document.getElementById('ctx-add-day').addEventListener('click', () => { closeDayMenu(); addDay(); });
+document.getElementById('ctx-edit-day').addEventListener('click', () => { closeDayMenu(); openDateModal(); });
+document.getElementById('ctx-del-day').addEventListener('click', () => { closeDayMenu(); deleteCurrentDay(); });
+
+// ===== MODALE DATE =====
+function openDateModal() {
+  const d = curDay();
+  document.getElementById('d-date').value  = d.date  || '';
+  document.getElementById('d-label').value = d.label || '';
+  document.getElementById('date-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('d-label').focus(), 320);
+}
+function closeDateModal() { document.getElementById('date-overlay').classList.remove('open'); }
+
+async function saveDateData() {
+  const d     = curDay();
+  const date  = document.getElementById('d-date').value  || null;
+  const label = document.getElementById('d-label').value.trim() || `Jour ${curDayIdx+1}`;
+  const { error } = await sb.from('days').update({ date, label }).eq('id', d.id);
+  if (reportSupabaseError('Mise à jour du jour impossible', error)) return;
+  d.date = date; d.label = label;
+  const savedId = d.id;
+  sortDaysByDate();
+  curDayIdx = days.findIndex(x => x.id === savedId);
+  renderDayTabs();
+  closeDateModal();
+  showToast('Jour mis à jour');
+}
+
+document.getElementById('date-btn-cancel').addEventListener('click', closeDateModal);
+document.getElementById('date-btn-save').addEventListener('click', saveDateData);
+document.getElementById('date-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('date-overlay')) closeDateModal();
+});
+
+// ===== RENDU TIMELINE =====
+function render() {
+  const list = getSorted();
+  const tl   = document.getElementById('timeline');
+  const em   = document.getElementById('empty');
+
+  if (events.length === 0) { tl.innerHTML = ''; em.style.display = 'block'; return; }
+  em.style.display = 'none';
+
+  let lastSlot = null;
+
+  // HTML des events
+  const eventsHtml = list.map((ev, i) => {
+    const isLast  = i === list.length - 1;
+    const url     = gpsUrl(ev.address);
+
+    const evSlot = ev.slot || slotFromTime(ev.time) || 'matin';
+    let separator = '';
+    if (evSlot !== lastSlot) {
+      const sepLabel = { matin: 'Matin', aprem: 'Après-midi', soir: 'Soir' }[evSlot] || '';
+      separator = `<div class="tl-separator">${sepLabel}</div>`;
+    }
+    lastSlot = evSlot;
+
+    const timeLabelHtml = ev.slot
+      ? `<span class="slot-badge slot-${ev.slot}" data-slot-event-id="${esc(ev.id)}" title="Changer le créneau">${SLOT_LABELS[ev.slot]}</span>`
+      : `<span style="font-size:11px;font-family:var(--mono);color:var(--text-3);">${esc(ev.time||'--:--')}</span>`;
+
+    return `
+    ${separator}
+    <div class="tl-row" data-event-id="${esc(ev.id)}">
+      <div class="tl-spine">
+        <div class="tl-time">${timeLabelHtml}</div>
+        <div class="tl-dot-wrap">
+          <div class="tl-dot ${ev.done?'done':''}"></div>
+          ${!isLast?`<div class="tl-line ${ev.done?'done':''}"></div>`:''}
+        </div>
+      </div>
+      <div class="tl-card-wrap">
+        <div class="tl-card-inner" id="ci-${esc(ev.id)}">
+          <div class="tl-card ${ev.done?'is-done':''}">
+            <div class="tl-card-main">
+              <div class="tl-card-content">
+                <div class="tl-card-head">
+                  <div class="tl-ev-title ${ev.done?'done':''}">${esc(ev.title)}</div>
+                  <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                    <button class="ev-more-btn" data-event-id="${esc(ev.id)}" title="Options">···</button>
+                  </div>
+                </div>
+                ${ev.address && !ev.done ? `<div class="tl-ev-address">
+                  <span>📍</span>${url
+                    ? `<a class="gps-link" href="${url}" target="_blank" rel="noopener">${esc(ev.address)}</a>`
+                    : `<span>${esc(ev.address)}</span>`}
+                </div>` : ''}
+                ${ev.note && !ev.done ?`<div class="tl-ev-note">${esc(ev.note)}</div>`:''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  tl.innerHTML = eventsHtml;
+
+  bindCardClick();
+  bindEventDrag();
+}
+
+document.getElementById('timeline').addEventListener('click', e => {
+  const moreBtn = e.target.closest('.ev-more-btn');
+  if (moreBtn) {
+    e.stopPropagation();
+    openEvCtxMenu(moreBtn.dataset.eventId, moreBtn);
+    return;
+  }
+  const slotBadge = e.target.closest('.slot-badge[data-slot-event-id]');
+  if (slotBadge) {
+    e.stopPropagation();
+    openSlotPicker(slotBadge.dataset.slotEventId, slotBadge);
+  }
+});
+
+// ===== EVENT CONTEXT MENU =====
+const evCtxMenu = document.getElementById('ev-ctx-menu');
+let evCtxId = null;
+
+function openEvCtxMenu(id, btn) {
+  evCtxId = id;
+  const ev = events.find(e => e.id === id);
+  if (ev) {
+    document.getElementById('ev-ctx-done-icon').textContent = ev.done ? '↺' : '✓';
+    document.getElementById('ev-ctx-done-label').textContent = ev.done ? 'Marquer à faire' : 'Marquer fait';
+  }
+  const rect = btn.getBoundingClientRect();
+  // Positionner sous le bouton, aligné à droite
+  evCtxMenu.style.top   = (rect.bottom + 4) + 'px';
+  const right = window.innerWidth - rect.right;
+  evCtxMenu.style.right = Math.max(8, right) + 'px';
+  evCtxMenu.classList.add('open');
+  setTimeout(() => document.addEventListener('click', closeEvCtxOutside, { once: true, capture: false }), 0);
+}
+function closeEvCtxOutside(e) {
+  if (!evCtxMenu.contains(e.target)) closeEvCtxMenu();
+}
+function closeEvCtxMenu() {
+  evCtxMenu.classList.remove('open');
+  evCtxId = null;
+}
+
+document.getElementById('ev-ctx-edit').addEventListener('click', () => {
+  const id = evCtxId; closeEvCtxMenu(); openEdit(id);
+});
+document.getElementById('ev-ctx-done').addEventListener('click', () => {
+  const id = evCtxId; closeEvCtxMenu(); toggleDone(id);
+});
+document.getElementById('ev-ctx-move').addEventListener('click', () => {
+  const id = evCtxId; closeEvCtxMenu(); showMoveMenu(id);
+});
+document.getElementById('ev-ctx-del').addEventListener('click', () => {
+  const id = evCtxId; closeEvCtxMenu(); delEvent(id);
+});
+
+let moveEvId = null;
+
+function showMoveMenu(evId) {
+  moveEvId = evId;
+  const ev = events.find(e => e.id === evId);
+  const slotLabel = SLOT_LABELS[effectiveSlot(ev || {})] || 'ce créneau';
+  document.querySelector('.move-sheet-title').textContent = `Changer de jour · ${slotLabel}`;
+  const list = document.getElementById('move-day-list');
+  const otherDays = days.filter(d => d.id !== curDay().id);
+  list.innerHTML = otherDays.length === 0
+    ? `<div style="padding:16px;color:var(--text-3);font-size:13px;">Aucun autre jour disponible</div>`
+    : otherDays.map(d => `
+        <button class="move-day-btn" data-move-day-id="${esc(d.id)}">
+          <span class="move-day-main">
+            <span class="move-day-label">${esc(d.label || d.id)}</span>
+            <span class="move-day-slot">Fin de zone ${esc(slotLabel)}</span>
+          </span>
+          ${d.date ? `<span class="move-day-btn-date">${formatDateShort(d.date)}</span>` : ''}
+        </button>`).join('');
+  document.getElementById('move-overlay').classList.add('open');
+}
+
+function closeMoveModal() {
+  document.getElementById('move-overlay').classList.remove('open');
+  moveEvId = null;
+}
+
+document.getElementById('move-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('move-overlay')) closeMoveModal();
+});
+
+document.getElementById('move-day-list').addEventListener('click', e => {
+  const btn = e.target.closest('.move-day-btn');
+  if (!btn) return;
+  moveEventToDay(btn.dataset.moveDayId);
+});
+
+async function moveEventToDay(destDayId) {
+  if (!moveEvId) return;
+  const evId = moveEvId;
+  const ev = events.find(e => e.id === evId);
+  closeMoveModal();
+  const targetSlot = ev ? effectiveSlot(ev) : null;
+  const { data: destEvents, error: selectError } = await sb.from('events').select('position,slot,time').eq('day_id', destDayId);
+  if (reportSupabaseError('Chargement du jour de destination impossible', selectError)) return;
+  const maxPos = (destEvents || [])
+    .filter(item => !targetSlot || effectiveSlot(item) === targetSlot)
+    .reduce((max, item) => Math.max(max, item.position ?? -1), -1);
+  const { error } = await sb.from('events').update({ day_id: destDayId, position: maxPos + 1 }).eq('id', evId);
+  if (reportSupabaseError('Déplacement impossible', error)) return;
+  events = events.filter(e => e.id !== evId);
+  render();
+  showToast(`Activité déplacée vers ${days.find(d => d.id === destDayId)?.label || 'un autre jour'}`);
+}
+
+
+// ===== SLOT PICKER =====
+const slotPickerEl = (() => {
+  const el = document.createElement('div');
+  el.className = 'slot-picker';
+  el.id = 'slot-picker';
+  el.innerHTML = `
+    <button class="slot-picker-item" data-slot="matin"><span class="slot-picker-dot dot-matin"></span>Matin</button>
+    <button class="slot-picker-item" data-slot="aprem"><span class="slot-picker-dot dot-aprem"></span>Ap-m</button>
+    <button class="slot-picker-item" data-slot="soir"><span class="slot-picker-dot dot-soir"></span>Soir</button>
+  `;
+  document.body.appendChild(el);
+  return el;
+})();
+
+let slotPickerEvId = null;
+
+function openSlotPicker(id, badgeEl) {
+  slotPickerEvId = id;
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+
+  // Marquer l'option active
+  slotPickerEl.querySelectorAll('.slot-picker-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.slot === ev.slot);
+  });
+
+  // Positionner sous le badge
+  const rect = badgeEl.getBoundingClientRect();
+  slotPickerEl.style.left = Math.min(rect.left, window.innerWidth - 140) + 'px';
+  slotPickerEl.style.top  = (rect.bottom + 4) + 'px';
+  slotPickerEl.classList.add('open');
+
+  // Fermer au clic ailleurs (pas dans le picker lui-même)
+  setTimeout(() => document.addEventListener('click', (e) => {
+    if (!slotPickerEl.contains(e.target)) closeSlotPicker();
+  }, { once: true, capture: false }), 0);
+}
+
+function closeSlotPicker() {
+  slotPickerEl.classList.remove('open');
+  slotPickerEvId = null;
+}
+
+slotPickerEl.querySelectorAll('.slot-picker-item').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = slotPickerEvId; // capturer avant closeSlotPicker remet à null
+    closeSlotPicker();
+    if (!id) return;
+    const ev = events.find(e => e.id === id);
+    if (!ev) return;
+    const nextSlot = btn.dataset.slot;
+    const prevSlot = ev.slot;
+    const prevPosition = ev.position;
+    const position = effectiveSlot(ev) === nextSlot && ev.position !== null && ev.position !== undefined
+      ? ev.position
+      : nextEventPositionInSlot(nextSlot, ev.id);
+    ev.slot = nextSlot;
+    ev.position = position;
+    render();
+    const { error } = await sb.from('events').update({ slot: ev.slot, position }).eq('id', ev.id);
+    if (reportSupabaseError('Changement de créneau impossible', error)) {
+      ev.slot = prevSlot;
+      ev.position = prevPosition;
+      render();
+      return;
+    }
+    showToast(`Activité déplacée en ${SLOT_LABELS[nextSlot] || 'créneau choisi'}`);
+  });
+});
+
+function bindCardClick() {
+  const scrollEl = document.getElementById('main-scroll');
+  if (scrollEl.dataset.evMenuCloseBound) return;
+  scrollEl.dataset.evMenuCloseBound = 'true';
+  scrollEl.addEventListener('touchstart', () => {
+    if (evCtxId) closeEvCtxMenu();
+  }, { passive: true });
+}
+
+// ── helpers slot ──────────────────────────────────────────────
+function slotFromTime(timeStr) {
+  if (!timeStr) return null;
+  const h = parseInt(timeStr.split(':')[0], 10);
+  if (h >= 19) return 'soir';
+  if (h >= 13) return 'aprem';
+  return 'matin';
+}
+function effectiveSlot(ev) {
+  if (ev.slot) return ev.slot;
+  return slotFromTime(ev.time) || 'matin';
+}
+const overlay = document.getElementById('overlay');
+const fTime   = document.getElementById('f-time');
+const fTitle  = document.getElementById('f-title');
+const fAddr   = document.getElementById('f-address');
+const fNote   = document.getElementById('f-note');
+
+function setActiveSlot(slot) {
+  activeSlot = slot;
+  document.querySelectorAll('.time-type-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.slot === slot));
+  fTime.style.display = slot === '' ? 'block' : 'none';
+  // Pas de contrainte min/max sur l'heure — champ libre
+}
+
+function openAdd() {
+  editingId = null;
+  document.getElementById('sheet-title').textContent = 'Nouvelle activité';
+  setActiveSlot('');
+  // Heure par défaut = heure actuelle arrondie au quart d'heure (visible sur iOS sans clic)
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(Math.round(now.getMinutes()/15)*15 % 60).padStart(2,'0');
+  fTime.value = hh + ':' + mm;
+  fTitle.value=''; fAddr.value=''; fNote.value='';
+  fTitle.classList.remove('error');
+  overlay.classList.add('open');
+  setTimeout(() => fTitle.focus(), 320);
+}
+function openEdit(id) {
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+  editingId = id;
+  document.getElementById('sheet-title').textContent = "Modifier l'activité";
+  setActiveSlot(ev.slot||'');
+  fTime.value=ev.time||''; fTitle.value=ev.title||'';
+  fAddr.value=ev.address||''; fNote.value=ev.note||'';
+  fTitle.classList.remove('error');
+  overlay.classList.add('open');
+  setTimeout(() => fTitle.focus(), 320);
+}
+function closeModal() { overlay.classList.remove('open'); }
+
+async function saveEvent() {
+  const title   = fTitle.value.trim();
+  const time    = activeSlot === '' ? fTime.value.trim() : '';
+  const address = fAddr.value.trim();
+  const note    = fNote.value.trim();
+  if (!title) { fTitle.classList.add('error'); fTitle.focus(); setTimeout(()=>fTitle.classList.remove('error'),1600); return; }
+  const d = curDay();
+  const newEffectiveSlot = activeSlot || slotFromTime(time) || 'matin';
+  if (editingId) {
+    const ev = events.find(e => e.id === editingId);
+    const oldEffectiveSlot = ev ? effectiveSlot(ev) : newEffectiveSlot;
+    const position = ev && oldEffectiveSlot === newEffectiveSlot && ev.position !== null && ev.position !== undefined
+      ? ev.position
+      : nextEventPositionInSlot(newEffectiveSlot, editingId);
+    const { error } = await sb.from('events').update({ slot:activeSlot, time, title, address, note, position }).eq('id', editingId);
+    if (reportSupabaseError('Modification impossible', error)) return;
+    if (ev) Object.assign(ev, { slot:activeSlot, time, title, address, note, position });
+  } else {
+    const { data, error } = await sb.from('events').insert({
+      day_id:d.id, title, slot:activeSlot, time, address, note, done:false, position:nextEventPositionInSlot(newEffectiveSlot)
+    }).select().single();
+    if (reportSupabaseError('Ajout impossible', error)) return;
+    events.push(data);
+  }
+  render(); closeModal();
+  showToast(editingId ? 'Activité modifiée' : 'Activité ajoutée');
+}
+
+async function toggleDone(id) {
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+  const previousDone = ev.done;
+  ev.done = !ev.done;
+  render();
+  const { error } = await sb.from('events').update({ done: ev.done }).eq('id', id);
+  if (reportSupabaseError('Mise à jour impossible', error)) {
+    ev.done = previousDone;
+    render();
+    return;
+  }
+  showToast(ev.done ? 'Activité marquée faite' : 'Activité remise à faire');
+}
+
+async function delEvent(id) {
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+  openConfirm('🗑', 'Supprimer cette activité ?', `« ${ev.title} » sera définitivement supprimé.`, async () => {
+    const { error } = await sb.from('events').delete().eq('id', id);
+    if (reportSupabaseError('Suppression impossible', error)) return;
+    events = events.filter(e => e.id !== id);
+    render(); showToast('Activité supprimée');
+  });
+}
+
+// ===== HÔTEL =====
+const hotelOverlay = document.getElementById('hotel-overlay');
+const hName = document.getElementById('h-name');
+const hCheckin = document.getElementById('h-checkin');
+const hAddr = document.getElementById('h-address');
+const hNote = document.getElementById('h-note');
+
+function openHotelModal() {
+  hName.value=hotel?.name||''; hCheckin.value=hotel?.checkin||'';
+  hAddr.value=hotel?.address||''; hNote.value=hotel?.note||'';
+  hName.classList.remove('error');
+  hotelOverlay.classList.add('open');
+  setTimeout(() => hName.focus(), 320);
+}
+function closeHotelModal() { hotelOverlay.classList.remove('open'); }
+
+async function saveHotelData() {
+  const name = hName.value.trim();
+  if (!name) { hName.classList.add('error'); hName.focus(); setTimeout(()=>hName.classList.remove('error'),1600); return; }
+  const d = curDay();
+  const wasEditingHotel = !!hotel?.id;
+  const payload = { name, checkin:hCheckin.value.trim(), address:hAddr.value.trim(), note:hNote.value.trim() };
+  if (hotel?.id) {
+    const { error } = await sb.from('hotels').update(payload).eq('id', hotel.id);
+    if (reportSupabaseError('Modification de l’hébergement impossible', error)) return;
+    Object.assign(hotel, payload);
+  } else {
+    const { data, error } = await sb.from('hotels').insert({ day_id:d.id, ...payload }).select().single();
+    if (reportSupabaseError('Ajout de l’hébergement impossible', error)) return;
+    hotel = data;
+  }
+  renderHotel(); closeHotelModal();
+  showToast(wasEditingHotel ? 'Hébergement mis à jour' : 'Hébergement ajouté');
+}
+
+async function deleteHotel() {
+  openConfirm('🏨', "Supprimer l'hébergement ?", 'Les infos de nuit seront effacées.', async () => {
+    if (hotel?.id) {
+      const { error } = await sb.from('hotels').delete().eq('id', hotel.id);
+      if (reportSupabaseError('Suppression de l’hébergement impossible', error)) return;
+    }
+    hotel = null; renderHotel(); showToast('Hébergement supprimé');
+  });
+}
+
+function renderHotel() {
+  const block = document.getElementById('hotel-block');
+  if (!hotel?.name) {
+    block.innerHTML = `
+      <div class="hotel-empty" data-open-hotel="true">
+        <div class="hotel-empty-icon">🏨</div>
+        <div class="hotel-empty-text">Ajouter l'hébergement du soir</div>
+        <div class="hotel-empty-sub">Hôtel, Airbnb, chez l'habitant…</div>
+      </div>`;
+    return;
+  }
+  const url = gpsUrl(hotel.address);
+  block.innerHTML = `
+    <div class="hotel-card" data-open-hotel-menu="true">
+      <div class="hotel-card-head">
+        <div class="hotel-icon">🏨</div>
+        <div style="flex:1;min-width:0;">
+          <div class="hotel-name">${esc(hotel.name)}</div>
+          ${hotel.checkin?`<div class="hotel-sub">Check-in : ${esc(hotel.checkin)}</div>`:''}
+        </div>
+        <button class="hotel-more-btn" id="hotel-more-btn" title="Options">···</button>
+      </div>
+      ${hotel.address?`<div class="hotel-address"><span>📍</span>${url
+        ?`<a class="gps-link" href="${url}" target="_blank" rel="noopener">${esc(hotel.address)}</a>`
+        :`<span>${esc(hotel.address)}</span>`}</div>`:''}
+      ${hotel.note?`<div class="hotel-note">${esc(hotel.note)}</div>`:''}
+    </div>`;
+}
+
+document.getElementById('hotel-block').addEventListener('click', e => {
+  if (e.target.closest('.gps-link')) return;
+  if (e.target.closest('[data-open-hotel]')) {
+    openHotelModal();
+    return;
+  }
+  const moreBtn = e.target.closest('.hotel-more-btn');
+  if (moreBtn) {
+    e.stopPropagation();
+    openHotelCtxMenuFromBtn(moreBtn);
+    return;
+  }
+  if (e.target.closest('[data-open-hotel-menu]')) {
+    const btn = document.getElementById('hotel-more-btn');
+    if (btn) openHotelCtxMenuFromBtn(btn);
+  }
+});
+
+// ===== HOTEL CONTEXT MENU =====
+const hotelCtxMenu = document.getElementById('hotel-ctx-menu');
+let hotelCtxOpen = false;
+
+function openHotelCtxMenuFromBtn(btn) {
+  const rect = btn.getBoundingClientRect();
+  hotelCtxMenu.style.top   = (rect.bottom + 4) + 'px';
+  hotelCtxMenu.style.right = (window.innerWidth - rect.right) + 'px';
+  hotelCtxMenu.classList.add('open');
+  hotelCtxOpen = true;
+  setTimeout(() => document.addEventListener('click', closeHotelCtxOutside, { once: true, capture: false }), 0);
+}
+
+function closeHotelCtxOutside(e) {
+  if (!hotelCtxMenu.contains(e.target)) closeHotelCtxMenu();
+}
+function closeHotelCtxMenu() {
+  hotelCtxMenu.classList.remove('open');
+  hotelCtxOpen = false;
+}
+
+document.getElementById('hotel-ctx-edit').addEventListener('click', () => {
+  closeHotelCtxMenu();
+  openHotelModal();
+});
+document.getElementById('hotel-ctx-del').addEventListener('click', () => {
+  closeHotelCtxMenu();
+  deleteHotel();
+});
+
+// ===== REPAS =====
+const mealOverlay = document.getElementById('meal-overlay');
+const mName = document.getElementById('m-name');
+const mAddr = document.getElementById('m-address');
+const mNote = document.getElementById('m-note');
+
+const MEAL_TYPES = {
+  'Petit-dej': { icon: '🌅', bg: '#fff8e1', color: '#b7740a' },
+  'Déjeuner':  { icon: '🥗', bg: 'var(--meal-midi)', color: 'var(--meal-midi-c)' },
+  'Goûter':    { icon: '🍰', bg: 'var(--meal-gouter)', color: 'var(--meal-gouter-c)' },
+  'Dîner':     { icon: '🌙', bg: 'var(--meal-soir)', color: 'var(--meal-soir-c)' },
+};
+
+let activeMealTypePill = 'Petit-dej';
+let mealsList = [];
+let editingMealId = null;
+
+function setActiveMealPill(type) {
+  activeMealTypePill = type;
+  document.querySelectorAll('.meal-type-pill').forEach(b =>
+    b.classList.toggle('active', b.dataset.mtype === type));
+}
+
+// Wire pill buttons
+document.querySelectorAll('.meal-type-pill').forEach(btn => {
+  btn.addEventListener('click', () => setActiveMealPill(btn.dataset.mtype));
+});
+
+function openAddMealModal() {
+  editingMealId = null;
+  document.getElementById('meal-sheet-title').textContent = 'Ajouter un repas';
+  setActiveMealPill('Petit-dej');
+  mName.value = ''; mAddr.value = ''; mNote.value = '';
+  mName.classList.remove('error');
+  mealOverlay.classList.add('open');
+  setTimeout(() => mName.focus(), 320);
+}
+
+function openEditMealModal(id) {
+  const meal = mealsList.find(m => m.id === id);
+  if (!meal) return;
+  editingMealId = id;
+  document.getElementById('meal-sheet-title').textContent = 'Modifier le repas';
+  // Sélectionner le pill correspondant, fallback sur 'Déjeuner'
+  const t = Object.keys(MEAL_TYPES).includes(meal.type) ? meal.type : 'Déjeuner';
+  setActiveMealPill(t);
+  mName.value = meal.name || ''; mAddr.value = meal.address || ''; mNote.value = meal.note || '';
+  mName.classList.remove('error');
+  mealOverlay.classList.add('open');
+  setTimeout(() => mName.focus(), 320);
+}
+
+function closeMealModal() { mealOverlay.classList.remove('open'); }
+
+async function saveMealData() {
+  const name = mName.value.trim();
+  if (!name) { mName.classList.add('error'); mName.focus(); setTimeout(()=>mName.classList.remove('error'),1600); return; }
+  const d = curDay();
+  const payload = { type: activeMealTypePill, name, address: mAddr.value.trim(), note: mNote.value.trim() };
+  if (editingMealId) {
+    const { error } = await sb.from('meals').update(payload).eq('id', editingMealId);
+    if (error) { console.error('Erreur update repas:', error); showToast('Erreur : ' + error.message); return; }
+    const m = mealsList.find(m => m.id === editingMealId);
+    if (m) Object.assign(m, payload);
+  } else {
+    const maxPos = mealsList.reduce((m, x) => Math.max(m, x.position ?? -1), -1);
+    const { data, error } = await sb.from('meals').insert({ day_id: d.id, position: maxPos + 1, ...payload }).select().single();
+    if (error) { console.error('Erreur insert repas:', error); showToast('Erreur : ' + error.message); return; }
+    if (data) mealsList.push(data);
+  }
+  renderMeals(); closeMealModal();
+  showToast(editingMealId ? 'Repas modifié' : 'Repas ajouté');
+}
+
+// Meal context menu
+const mealCtxMenu = document.getElementById('meal-ctx-menu');
+let mealCtxId = null;
+
+function openMealCtxMenu(id, btn) {
+  mealCtxId = id;
+  const rect = btn.getBoundingClientRect();
+  mealCtxMenu.style.top   = (rect.bottom + 4) + 'px';
+  mealCtxMenu.style.right = (window.innerWidth - rect.right) + 'px';
+  mealCtxMenu.classList.add('open');
+  setTimeout(() => document.addEventListener('click', closeMealCtxOutside, { once: true, capture: false }), 0);
+}
+function closeMealCtxOutside(e) {
+  if (!mealCtxMenu.contains(e.target)) closeMealCtxMenu();
+}
+function closeMealCtxMenu() {
+  mealCtxMenu.classList.remove('open');
+  mealCtxId = null;
+}
+
+document.getElementById('meal-ctx-edit').addEventListener('click', () => {
+  const id = mealCtxId; closeMealCtxMenu(); openEditMealModal(id);
+});
+document.getElementById('meal-ctx-del').addEventListener('click', () => {
+  const id = mealCtxId; closeMealCtxMenu(); deleteMeal(id);
+});
+
+async function deleteMeal(id) {
+  const meal = mealsList.find(m => m.id === id);
+  if (!meal) return;
+  openConfirm('🍽️', 'Supprimer ce repas ?', `« ${meal.name} » sera supprimé.`, async () => {
+    const { error } = await sb.from('meals').delete().eq('id', id);
+    if (reportSupabaseError('Suppression du repas impossible', error)) return;
+    mealsList = mealsList.filter(m => m.id !== id);
+    renderMeals(); showToast('Repas supprimé');
+  });
+}
+
+function renderMeals() {
+  const grid = document.getElementById('meals-grid');
+  if (mealsList.length === 0) {
+    grid.innerHTML = `<div style="font-size:12px;color:var(--text-3);font-style:italic;padding:6px 2px;">Aucun repas — appuyez sur + pour ajouter</div>`;
+    return;
+  }
+  grid.innerHTML = mealsList.map(meal => {
+    const meta = MEAL_TYPES[meal.type] || { icon:'🍽️', bg:'var(--bg-2)', color:'var(--text-2)' };
+    const url  = gpsUrl(meal.address);
+    return `
+    <div class="meal-item-row" data-meal-id="${esc(meal.id)}">
+      <div class="meal-item-icon" style="background:${meta.bg}">${meta.icon}</div>
+      <div class="meal-item-body">
+        <div class="meal-item-label">${esc(meal.type||'Repas')}</div>
+        <div class="meal-item-name">${esc(meal.name)}</div>
+        ${meal.address ? (url
+          ? `<a class="gps-link" href="${url}" target="_blank" rel="noopener" style="font-size:11px;display:block;margin-top:2px;">📍 ${esc(meal.address)}</a>`
+          : `<div class="meal-item-addr">📍 ${esc(meal.address)}</div>`) : ''}
+        ${meal.note ? `<div class="meal-item-addr" style="color:var(--text-3);font-style:italic;margin-top:2px;">💬 ${esc(meal.note)}</div>` : ''}
+      </div>
+      <button class="meal-item-more" data-meal-id="${esc(meal.id)}" title="Options">···</button>
+    </div>`;
+  }).join('');
+  bindMealDrag();
+}
+
+document.getElementById('meals-grid').addEventListener('click', e => {
+  const moreBtn = e.target.closest('.meal-item-more');
+  if (!moreBtn) return;
+  e.stopPropagation();
+  openMealCtxMenu(moreBtn.dataset.mealId, moreBtn);
+});
+
+// ===== RÉORDONNANCEMENT MODULES =====
+function bindEventDrag() {
+  bindModuleDrag({
+    rowSelector: '.tl-row',
+    pressSelector: '.tl-card',
+    idKey: 'eventId',
+    draggingClass: 'dragging',
+    overTopClass: 'drag-over-top',
+    overBottomClass: 'drag-over-bottom',
+    canDrop: canDropEventOnto,
+    onDragStart: markEventDragAvailability,
+    onDragEnd: clearEventDragAvailability,
+    onInvalidDrop: showEventSlotDragLimit,
+    onDrop: eventDropOnto
+  });
+}
+
+function bindMealDrag() {
+  bindModuleDrag({
+    rowSelector: '.meal-item-row',
+    pressSelector: '.meal-item-row',
+    idKey: 'mealId',
+    draggingClass: 'meal-dragging',
+    overTopClass: 'meal-drag-over-top',
+    overBottomClass: 'meal-drag-over-bottom',
+    onDrop: mealDropOnto
+  });
+}
+
+function bindModuleDrag(config) {
+  const rows = Array.from(document.querySelectorAll(config.rowSelector));
+  const pressTargets = Array.from(document.querySelectorAll(config.pressSelector || config.rowSelector));
+  let dragId = null;
+  let autoScrollFrame = null;
+  let autoScrollSpeed = 0;
+  let longPressTimer = null;
+  let pendingTouch = null;
+  let pendingTarget = null;
+  let dragStarted = false;
+
+  const clearClasses = () => rows.forEach(row =>
+    row.classList.remove(config.draggingClass, config.overTopClass, config.overBottomClass));
+  const rowId = row => row?.dataset?.[config.idKey];
+  const rowForId = id => rows.find(row => rowId(row) === id);
+  const canDrop = targetId => !config.canDrop || config.canDrop(dragId, targetId);
+
+  function startDrag(id) {
+    dragId = id;
+    config.onDragStart?.(dragId);
+  }
+
+  function finishDrag() {
+    stopAutoScroll();
+    clearClasses();
+    config.onDragEnd?.(dragId);
+    dragId = null;
+  }
+
+  pressTargets.forEach(target => {
+    target.addEventListener('touchstart', onPressTouchStart, { passive: false });
+    target.addEventListener('mousedown', onMouseDown);
+  });
+
+  rows.forEach(row => {
+    row.addEventListener('dragover', e => {
+      const targetId = rowId(row);
+      if (!dragId || dragId === targetId || !canDrop(targetId)) return;
+      e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      clearClasses();
+      rowForId(dragId)?.classList.add(config.draggingClass);
+      row.classList.add(e.clientY < rect.top + rect.height / 2 ? config.overTopClass : config.overBottomClass);
+    });
+    row.addEventListener('dragleave', () => row.classList.remove(config.overTopClass, config.overBottomClass));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetId = rowId(row);
+      if (!dragId || dragId === targetId) return;
+      if (!canDrop(targetId)) { config.onInvalidDrop?.(dragId, targetId); return; }
+      const rect = row.getBoundingClientRect();
+      config.onDrop(targetId, e.clientY < rect.top + rect.height / 2, dragId);
+    });
+  });
+
+  function isInteractiveTarget(target) {
+    return !!target.closest('button, a, input, textarea, select, .slot-badge, .day-tab, .gps-link');
+  }
+
+  function idFromPressTarget(target) {
+    return rowId(target.closest(config.rowSelector));
+  }
+
+  function onMouseDown(e) {
+    if (e.button !== 0 || isInteractiveTarget(e.target)) return;
+    const id = idFromPressTarget(e.currentTarget);
+    if (!id) return;
+    startDrag(id);
+    const row = rowForId(dragId);
+    if (!row) return;
+    row.draggable = true;
+    row.addEventListener('dragstart', onRowDragStart, { once: true });
+    row.addEventListener('dragend', onRowDragEnd, { once: true });
+    document.addEventListener('mouseup', onMouseUpWithoutDrag, { once: true });
+  }
+
+  function onMouseUpWithoutDrag() {
+    const row = rowForId(dragId);
+    if (row) row.draggable = false;
+    if (dragId) finishDrag();
+  }
+
+  function onRowDragStart(e) {
+    const row = rowForId(dragId);
+    if (!row) return;
+    row.classList.add(config.draggingClass);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragId);
+    e.dataTransfer.setDragImage(row, Math.min(28, row.offsetWidth / 2), Math.min(28, row.offsetHeight / 2));
+  }
+
+  function onRowDragEnd() {
+    const row = rowForId(dragId);
+    if (row) row.draggable = false;
+    finishDrag();
+  }
+
+  function onPressTouchStart(e) {
+    if (isInteractiveTarget(e.target)) return;
+    const id = idFromPressTarget(e.currentTarget);
+    if (!id) return;
+    const touch = e.touches[0];
+    pendingTouch = { id, x: touch.clientX, y: touch.clientY };
+    pendingTarget = e.currentTarget;
+    dragStarted = false;
+    longPressTimer = setTimeout(() => beginTouchDrag(touch, id), 420);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd, { passive: false });
+    document.addEventListener('touchcancel', onTouchEnd, { passive: false });
+    pendingTarget.classList.add('long-press-ready');
+  }
+
+  function cancelPendingLongPress() {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    pendingTouch = null;
+    if (pendingTarget) pendingTarget.classList.remove('long-press-ready');
+    pendingTarget = null;
+  }
+
+  function beginTouchDrag(touch, id) {
+    cancelPendingLongPress();
+    dragStarted = true;
+    startDrag(id);
+    if (navigator.vibrate) navigator.vibrate(10);
+    const row = rowForId(dragId);
+    if (!row) return;
+    row.classList.add(config.draggingClass);
+  }
+
+  function onTouchMove(e) {
+    const touch = e.touches[0];
+    if (!dragStarted) {
+      if (pendingTouch && Math.hypot(touch.clientX - pendingTouch.x, touch.clientY - pendingTouch.y) > 9) {
+        cancelPendingLongPress();
+        cleanupTouchListeners();
+      }
+      return;
+    }
+    e.preventDefault();
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetRow = el && el.closest(config.rowSelector);
+    clearClasses();
+    rowForId(dragId)?.classList.add(config.draggingClass);
+    updateAutoScroll(touch.clientY);
+    if (!targetRow || rowId(targetRow) === dragId || !canDrop(rowId(targetRow))) return;
+    const rect = targetRow.getBoundingClientRect();
+    targetRow.classList.add(touch.clientY < rect.top + rect.height / 2 ? config.overTopClass : config.overBottomClass);
+  }
+
+  function onTouchEnd(e) {
+    if (!dragStarted) {
+      cancelPendingLongPress();
+      cleanupTouchListeners();
+      return;
+    }
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetRow = el && el.closest(config.rowSelector);
+    clearClasses();
+    if (targetRow && rowId(targetRow) !== dragId) {
+      if (!canDrop(rowId(targetRow))) {
+        config.onInvalidDrop?.(dragId, rowId(targetRow));
+        if (navigator.vibrate) navigator.vibrate(18);
+      } else {
+        const rect = targetRow.getBoundingClientRect();
+        config.onDrop(rowId(targetRow), touch.clientY < rect.top + rect.height / 2, dragId);
+        if (navigator.vibrate) navigator.vibrate(8);
+      }
+    }
+    finishDrag();
+    cleanupTouchListeners();
+  }
+
+  function cleanupTouchListeners() {
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend', onTouchEnd);
+    document.removeEventListener('touchcancel', onTouchEnd);
+  }
+
+  function updateAutoScroll(pointerY) {
+    const scrollEl = document.getElementById('main-scroll');
+    if (!scrollEl) return;
+    const rect = scrollEl.getBoundingClientRect();
+    const edge = 72;
+    if (pointerY < rect.top + edge) {
+      autoScrollSpeed = -Math.round((1 - (pointerY - rect.top) / edge) * 12);
+    } else if (pointerY > rect.bottom - edge) {
+      autoScrollSpeed = Math.round((1 - (rect.bottom - pointerY) / edge) * 12);
+    } else {
+      autoScrollSpeed = 0;
+    }
+    if (autoScrollSpeed && !autoScrollFrame) autoScrollFrame = requestAnimationFrame(runAutoScroll);
+  }
+
+  function runAutoScroll() {
+    const scrollEl = document.getElementById('main-scroll');
+    if (!scrollEl || !autoScrollSpeed) { autoScrollFrame = null; return; }
+    scrollEl.scrollTop += autoScrollSpeed;
+    autoScrollFrame = requestAnimationFrame(runAutoScroll);
+  }
+
+  function stopAutoScroll() {
+    autoScrollSpeed = 0;
+    if (autoScrollFrame) cancelAnimationFrame(autoScrollFrame);
+    autoScrollFrame = null;
+  }
+}
+
+function markEventDragAvailability(srcId) {
+  const src = events.find(ev => ev.id === srcId);
+  if (!src) return;
+  const srcSlot = effectiveSlot(src);
+  document.querySelectorAll('.tl-row').forEach(row => {
+    const ev = events.find(item => item.id === row.dataset.eventId);
+    row.classList.toggle('drag-unavailable', !!ev && ev.id !== srcId && effectiveSlot(ev) !== srcSlot);
+  });
+}
+
+function clearEventDragAvailability() {
+  document.querySelectorAll('.tl-row').forEach(row => row.classList.remove('drag-unavailable'));
+}
+
+function nextEventPositionInSlot(slot, excludedId = null) {
+  return events
+    .filter(ev => ev.id !== excludedId && effectiveSlot(ev) === slot)
+    .reduce((max, ev) => Math.max(max, ev.position ?? -1), -1) + 1;
+}
+
+function canDropEventOnto(srcId, targetId) {
+  const src = events.find(ev => ev.id === srcId);
+  const target = events.find(ev => ev.id === targetId);
+  return !!src && !!target && effectiveSlot(src) === effectiveSlot(target);
+}
+
+function showEventSlotDragLimit(srcId) {
+  const src = events.find(ev => ev.id === srcId);
+  const label = SLOT_LABELS[effectiveSlot(src || {})] || 'ce créneau';
+  showToast(`Déplacement limité à la zone ${label}`);
+}
+
+async function eventDropOnto(targetId, insertBefore, srcId) {
+  const src = events.find(ev => ev.id === srcId);
+  const target = events.find(ev => ev.id === targetId);
+  if (!src || !target) return;
+  const slot = effectiveSlot(src);
+  if (slot !== effectiveSlot(target)) { showEventSlotDragLimit(src.id); return; }
+
+  const previousPositions = events.map(ev => ({ id: ev.id, position: ev.position }));
+  const reordered = getSorted().filter(ev => effectiveSlot(ev) === slot);
+  const srcIdx = reordered.findIndex(ev => ev.id === src.id);
+  if (srcIdx === -1) return;
+  const [moved] = reordered.splice(srcIdx, 1);
+  const targetIdx = reordered.findIndex(ev => ev.id === target.id);
+  reordered.splice(insertBefore ? targetIdx : targetIdx + 1, 0, moved);
+  reordered.forEach((ev, index) => { ev.position = index; });
+  render();
+
+  const results = await Promise.all(reordered.map(ev =>
+    sb.from('events').update({ position: ev.position }).eq('id', ev.id)
+  ));
+  const failed = results.find(result => result.error);
+  if (failed) {
+    previousPositions.forEach(prev => {
+      const ev = events.find(item => item.id === prev.id);
+      if (ev) ev.position = prev.position;
+    });
+    render();
+    reportSupabaseError('Réorganisation impossible', failed.error);
+    return;
+  }
+  showToast('Ordre des activités mis à jour');
+}
+
+async function mealDropOnto(targetId, insertBefore, srcId) {
+  const srcIdx = mealsList.findIndex(meal => meal.id === srcId);
+  const targetIdx = mealsList.findIndex(meal => meal.id === targetId);
+  if (srcIdx === -1 || targetIdx === -1) return;
+
+  const previousMeals = mealsList.map(meal => ({ ...meal }));
+  const reordered = [...mealsList];
+  const [moved] = reordered.splice(srcIdx, 1);
+  const newTargetIdx = reordered.findIndex(meal => meal.id === targetId);
+  reordered.splice(insertBefore ? newTargetIdx : newTargetIdx + 1, 0, moved);
+  reordered.forEach((meal, index) => { meal.position = index; });
+  mealsList = reordered;
+  renderMeals();
+
+  const results = await Promise.all(mealsList.map(meal =>
+    sb.from('meals').update({ position: meal.position }).eq('id', meal.id)
+  ));
+  const failed = results.find(result => result.error);
+  if (failed) {
+    mealsList = previousMeals;
+    renderMeals();
+    reportSupabaseError('Réorganisation des repas impossible', failed.error);
+    return;
+  }
+  showToast('Ordre des repas mis à jour');
+}
+
+
+
+// ===== REALTIME =====
+function setupRealtime() {
+  sb.channel('tripmate-v4')
+    .on('postgres_changes', { event:'*', schema:'public', table:'days',   filter:`trip_id=eq.${tripId}` }, () => loadDays())
+    .on('postgres_changes', { event:'*', schema:'public', table:'events' }, async (p) => {
+      const d = curDay(); if (!d) return;
+      const rec = p.new || p.old;
+      if (rec?.day_id !== d.id) return;
+      const { data } = await sb.from('events').select('*').eq('day_id', d.id).order('position', { ascending: true, nullsFirst: false });
+      events = data||[]; render();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'hotels' }, async (p) => {
+      const d = curDay(); if (!d) return;
+      const rec = p.new || p.old;
+      if (rec?.day_id !== d.id) return;
+      const { data } = await sb.from('hotels').select('*').eq('day_id', d.id).maybeSingle();
+      hotel = data||null; renderHotel();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'meals' }, async (p) => {
+      const d = curDay(); if (!d) return;
+      const rec = p.new || p.old;
+      if (rec?.day_id !== d.id) return;
+      const { data } = await sb.from('meals').select('*').eq('day_id', d.id).order('position', { ascending: true, nullsFirst: false });
+      mealsList = data || [];
+      renderMeals();
+    })
+    .subscribe();
+}
+
+// ===== CÂBLAGE =====
+document.getElementById('btn-add').addEventListener('click', openAdd);
+document.getElementById('btn-add-meal').addEventListener('click', openAddMealModal);
+document.getElementById('btn-cancel').addEventListener('click', closeModal);
+document.getElementById('btn-save').addEventListener('click', saveEvent);
+overlay.addEventListener('click', e => { if (e.target===overlay) closeModal(); });
+
+document.getElementById('hotel-btn-cancel').addEventListener('click', closeHotelModal);
+document.getElementById('hotel-btn-save').addEventListener('click', saveHotelData);
+hotelOverlay.addEventListener('click', e => { if (e.target===hotelOverlay) closeHotelModal(); });
+
+document.getElementById('meal-btn-cancel').addEventListener('click', closeMealModal);
+document.getElementById('meal-btn-save').addEventListener('click', saveMealData);
+mealOverlay.addEventListener('click', e => { if (e.target===mealOverlay) closeMealModal(); });
+
+document.querySelectorAll('.time-type-btn').forEach(btn =>
+  btn.addEventListener('click', () => setActiveSlot(btn.dataset.slot)));
+
+[fTitle, fAddr].forEach(el => el.addEventListener('keydown', e => { if(e.key==='Enter') saveEvent(); }));
+[hName, hAddr].forEach(el => el.addEventListener('keydown', e => { if(e.key==='Enter') saveHotelData(); }));
+[mName, mAddr].forEach(el => el.addEventListener('keydown', e => { if(e.key==='Enter') saveMealData(); }));
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') {
+    closeModal(); closeHotelModal(); closeMealModal();
+    closeConfirm(); closeDateModal(); closeDayMenu();
+    closeHotelCtxMenu(); closeMealCtxMenu(); closeEvCtxMenu(); closeMoveModal();
+  }
+});
+
+// ===== MOT DE PASSE =====
+const _h = 'ddd8e6a5e12393a372e260ec4e301c6e65025c70f6c8bdd62c820c9b0986c87e';
+const _s = 'tm_auth_v1';
+const _d = 30 * 24 * 60 * 60 * 1000;
+
+async function _hash(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str+'tm2024'));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function checkAuth() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(_s)||'null');
+    if (stored && stored.h===_h && Date.now()<stored.exp) {
+      document.getElementById('pw-screen').classList.add('hidden');
+      return true;
+    }
+  } catch(_) {}
+  return false;
+}
+async function tryPassword() {
+  const val   = document.getElementById('pw-input').value;
+  const input = document.getElementById('pw-input');
+  const err   = document.getElementById('pw-error');
+  if (!val) return;
+  const h = await _hash(val);
+  if (h===_h) {
+    localStorage.setItem(_s, JSON.stringify({ h:_h, exp:Date.now()+_d }));
+    document.getElementById('pw-screen').classList.add('hidden');
+    init();
+  } else {
+    input.classList.add('error');
+    err.textContent = 'Mot de passe incorrect';
+    input.value = '';
+    setTimeout(() => { input.classList.remove('error'); err.textContent=''; }, 2000);
+  }
+}
+document.getElementById('pw-btn').addEventListener('click', tryPassword);
+document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') tryPassword(); });
+
+// ===== START =====
+checkAuth().then(ok => { if (ok) init(); });
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(){/* ignore */});
+  });
+}
+</script>
+
+</body>
+</html>

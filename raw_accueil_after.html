@@ -85,7 +85,7 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
 .top-bar-pill { background: rgba(255,255,255,.12); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; letter-spacing: .03em; }
 
 /* MAPS ICON */
-.nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-items: center; justify-content: stretch; }
+.nav-grid { display: grid; grid-template-columns: 1fr 1fr 56px; gap: 8px; align-items: stretch; }
 
 /* SCROLL */
 .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px 32px; display: flex; flex-direction: column; gap: 16px; }
@@ -98,26 +98,11 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
 .nav-card-label { font-size: 13px; font-weight: 600; color: var(--text-1); }
 
 /* NAV - MAPS CARD (small) */
-.nav-maps-card { display: flex; align-items: center; justify-content: center; padding: 10px 0; min-height: 56px; border-radius: 12px; background: var(--brand); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 2px 10px rgba(0,0,0,.04); text-decoration: none; color: #fff; width: 100%; }
+.nav-maps-card { display: flex; align-items: center; justify-content: center; padding: 11px 12px; width: 56px; border-radius: 12px; background: var(--brand); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 2px 10px rgba(0,0,0,.04); text-decoration: none; color: #fff; }
 .nav-maps-card:active { opacity: .85; transform: translateY(1px); }
-.nav-maps-card .maps-icon { width: 32px; height: 32px; display: block; line-height: 1; text-align: center; }
+.nav-maps-card .maps-icon { width: 28px; height: 28px; display: block; }
 .nav-card-sub { font-size: 10px; color: var(--text-3); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-card-accent { border-color: rgba(87,3,23,.38); box-shadow: 0 2px 10px rgba(87,3,23,.08); }
-
-/* TODOS: 3-day mini lists */
-.todos-3cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.todo-column { display: flex; flex-direction: column; gap: 8px; }
-.todo-col-title { font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 4px; }
-
-@media (max-width:520px) {
-  .todos-3cols { grid-template-columns: 1fr; }
-}
-
-/* Countdown card for pre-departure */
-.countdown-card { background: linear-gradient(180deg, rgba(87,3,23,0.06), rgba(87,3,23,0.02)); border-radius: 12px; padding: 16px; border: 1px solid rgba(87,3,23,0.08); display:flex; flex-direction:column; align-items:center; gap:8px; }
-.countdown-title { font-size: 12px; color: var(--text-2); text-transform: uppercase; letter-spacing: .08em; }
-.countdown-time { font-size: 28px; font-weight: 700; color: var(--brand); }
-.countdown-sub { font-size: 12px; color: var(--text-3); }
 
 /* SECTION HEADER */
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -255,34 +240,30 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
 
     <!-- NAVIGATION RAPIDE -->
     <div>
+      <div class="section-head">
+        <div class="section-title"><span class="section-dot section-dot-brand"></span>Navigation</div>
+      </div>
       <div class="nav-grid">
-            <a href="tripmate_itineraire_deV3.html" class="nav-maps-card" id="nav-itinerary" title="Itinéraire" aria-label="Itinéraire">
-              <svg class="maps-icon" width="32" height="32" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <rect x="7" y="6" width="10" height="2" fill="currentColor" />
-                <rect x="7" y="10" width="10" height="2" fill="currentColor" />
-                <rect x="7" y="14" width="10" height="2" fill="currentColor" />
-                <circle cx="4" cy="7" r="1.2" fill="currentColor" />
-                <circle cx="4" cy="11" r="1.2" fill="currentColor" />
-                <circle cx="4" cy="15" r="1.2" fill="currentColor" />
-              </svg>
-            </a>
-            <a href="tripmate_todo_deV1.html" class="nav-maps-card" id="nav-todos" title="Rappels" aria-label="Rappels">
-              <svg class="maps-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 1 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2h16l-2-2z" fill="currentColor"/>
-              </svg>
-              <div class="nav-card-sub" id="nav-todo-sub" style="display:none">Chargement…</div>
-            </a>
-            <a href="https://drive.google.com/drive/folders/YOUR_DRIVE_FOLDER_ID" class="nav-maps-card" id="nav-docs" target="_blank" rel="noopener noreferrer" title="Documents (Google Drive)" aria-label="Documents">
-              <svg class="maps-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z" fill="currentColor"/>
-              </svg>
-            </a>
-            <a href="https://www.google.com/maps/d/viewer?mid=YOUR_MAP_ID" class="nav-maps-card" id="nav-maps" target="_blank" rel="noopener noreferrer" title="Ouvrir la carte TripMate" aria-label="Carte">
-              <svg class="maps-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" fill="currentColor"/>
-              </svg>
-            </a>
+        <a href="tripmate_itineraire_deV3.html" class="nav-card nav-card-accent" id="nav-itinerary">
+          <div class="nav-card-icon">🗺️</div>
+          <div class="nav-card-text">
+            <div class="nav-card-label">Itinéraire</div>
+            <div class="nav-card-sub">Activités par jour</div>
           </div>
+        </a>
+        <a href="tripmate_todo_deV1.html" class="nav-card nav-card-accent" id="nav-todos">
+          <div class="nav-card-icon">🔔</div>
+          <div class="nav-card-text">
+            <div class="nav-card-label">Rappels</div>
+            <div class="nav-card-sub" id="nav-todo-sub">Chargement…</div>
+          </div>
+        </a>
+        <a href="https://www.google.com/maps/d/viewer?mid=YOUR_MAP_ID" class="nav-maps-card" id="nav-maps" target="_blank" rel="noopener noreferrer" title="Ouvrir la carte TripMate">
+          <svg class="maps-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" fill="currentColor"/>
+          </svg>
+        </a>
+      </div>
     </div>
 
     <!-- ÉVÉNEMENTS DU JOUR -->
@@ -298,31 +279,14 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
       </div>
     </div>
 
-    <!-- RAPPELS: aujourd'hui / demain / surlendemain -->
+    <!-- RAPPELS DU JOUR -->
     <div id="todos-section">
       <div class="section-head">
-        <div class="section-title"><span class="section-dot"></span>Rappels</div>
+        <div class="section-title"><span class="section-dot"></span>Rappels aujourd'hui</div>
         <span class="section-count" id="todos-count">—</span>
       </div>
-      <div class="todos-3cols">
-        <div class="todo-column">
-          <div class="todo-col-title">Aujourd'hui</div>
-          <div class="todo-mini-list" id="todo-list-0">
-            <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
-          </div>
-        </div>
-        <div class="todo-column">
-          <div class="todo-col-title">Demain</div>
-          <div class="todo-mini-list" id="todo-list-1">
-            <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
-          </div>
-        </div>
-        <div class="todo-column">
-          <div class="todo-col-title">Surlendemain</div>
-          <div class="todo-mini-list" id="todo-list-2">
-            <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
-          </div>
-        </div>
+      <div class="todo-mini-list" id="todo-list">
+        <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
       </div>
     </div>
 
@@ -413,113 +377,14 @@ function getStoredTripId() {
 function setSelectedTrip(id) {
   tripId = id;
   localStorage.setItem(TRIP_STORAGE_KEY, id);
-  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   updateNavLinks();
 }
 
 function updateNavLinks() {
   const qs = tripId ? `?trip_id=${encodeURIComponent(tripId)}` : '';
-  const itin = document.getElementById('nav-itinerary');
-  if (itin) itin.href = 'tripmate_itineraire_deV3.html' + qs;
-  const todos = document.getElementById('nav-todos');
-  if (todos) todos.href = 'tripmate_todo_deV1.html' + qs;
-  const mapsEl = document.getElementById('nav-maps');
-  if (mapsEl) {
-    // temporary placeholder while we fetch the real link from Supabase
-    mapsEl.href = 'javascript:void(0)';
-    loadMapLinkForTrip(tripId);
-  }
-  const docsEl = document.getElementById('nav-docs');
-  if (docsEl) {
-    docsEl.href = 'javascript:void(0)';
-    loadDriveLinkForTrip(tripId);
-  }
+  document.getElementById('nav-itinerary').href = 'tripmate_itineraire_deV3.html' + qs;
+  document.getElementById('nav-todos').href = 'tripmate_todo_deV1.html' + qs;
 }
-
-function loadDriveLinkForTrip(id) {
-  if (!id) return;
-  try {
-    sb.from('trips').select('google_drive_url').eq('id', id).single().then(({ data, error }) => {
-      if (error) {
-        console.warn('loadDriveLinkForTrip error', error);
-        return;
-      }
-      const a = document.getElementById('nav-docs');
-      if (!a) return;
-      if (data?.google_drive_url) {
-        a.href = data.google_drive_url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-      } else {
-        a.removeAttribute('href');
-      }
-    });
-  } catch (err) {
-    console.error('loadDriveLinkForTrip exception', err);
-  }
-}
-
-async function loadMapLinkForTrip(id) {
-  if (!id) return;
-  try {
-    const { data, error } = await sb.from('trips').select('google_map_url').eq('id', id).single();
-    if (error) {
-      console.warn('loadMapLinkForTrip error', error);
-      return;
-    }
-    const a = document.getElementById('nav-maps');
-    if (!a) return;
-    if (data?.google_map_url) {
-      a.href = data.google_map_url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-    } else {
-      a.removeAttribute('href');
-    }
-  } catch (err) {
-    console.error('loadMapLinkForTrip exception', err);
-  }
-}
-
-// ===== OPEN MAP IN NATIVE APP (Android/iOS) =====
-function openMapInApp(url) {
-  if (!url || typeof url !== 'string') { showToast('Lien de carte indisponible'); return; }
-  if (!/^https?:\/\//i.test(url)) { window.open(url, '_blank', 'noopener'); return; }
-  const ua = navigator.userAgent || '';
-  const isAndroid = /Android/i.test(ua);
-  const isIOS = /iPhone|iPad|iPod/i.test(ua);
-
-  if (isAndroid) {
-    const fallback = encodeURIComponent(url);
-    const withoutProto = url.replace(/^https?:\/\//i, '');
-    const intentUrl = `intent://${withoutProto}#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=${fallback};end`;
-    window.location.href = intentUrl;
-    setTimeout(() => { window.location.href = url; }, 1500);
-    return;
-  }
-
-  if (isIOS) {
-    const scheme = 'comgooglemaps://?q=' + encodeURIComponent(url);
-    window.location = scheme;
-    setTimeout(() => { window.location = url; }, 1500);
-    return;
-  }
-
-  window.open(url, '_blank', 'noopener');
-}
-
-// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native
-document.addEventListener('click', function(e) {
-  const el = e.target.closest && e.target.closest('#nav-maps');
-  if (!el) return;
-  e.preventDefault();
-  const url = el.href || el.dataset.mapUrl || '';
-  if (!url || url.startsWith('javascript:')) {
-    showToast('Carte non disponible pour ce voyage');
-    return;
-  }
-  openMapInApp(url);
-});
 
 function renderTripSelector() {
   const selector = document.getElementById('trip-selector');
@@ -545,14 +410,9 @@ function updateTripColor() {
 
 function clearHomeData() {
   document.getElementById('event-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">📅</div>Chargement…</div>`;
-  ['todo-list-0','todo-list-1','todo-list-2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>`;
-  });
-  const todosCountEl = document.getElementById('todos-count');
-  if (todosCountEl) todosCountEl.textContent = '—';
-  const navTodoSub = document.getElementById('nav-todo-sub');
-  if (navTodoSub) navTodoSub.textContent = 'Chargement…';
+  document.getElementById('todo-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>`;
+  document.getElementById('todos-count').textContent = '—';
+  document.getElementById('nav-todo-sub').textContent = 'Chargement…';
 }
 
 let toastTimer = null;
@@ -563,7 +423,6 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
-let countdownTimer = null;
 
 // ===== MOMENT DU JOUR =====
 function getMoment() {
@@ -613,25 +472,7 @@ async function loadTodayEvents() {
   }
 
   if (!days || days.length === 0) {
-    // Pas de jour pour aujourd'hui — vérifier s'il existe un premier jour futur (compte à rebours)
-    const { data: firstDays, error: firstDayError } = await sb.from('days')
-      .select('id, label, date')
-      .eq('trip_id', tripId)
-      .order('date', { ascending: true })
-      .limit(1);
-
-    if (logError('Chargement du premier jour', firstDayError)) {
-      list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les jours</div>`;
-      return;
-    }
-
-    if (firstDays && firstDays.length > 0 && firstDays[0].date > today) {
-      // Trip starts in the future — afficher un joli compte à rebours jusqu'au premier jour
-      startCountdown(firstDays[0].date, firstDays[0].label);
-      return;
-    }
-
-    // Sinon afficher le prochain jour planifié (s'il existe)
+    // Pas de jour pour aujourd'hui — chercher le prochain jour planifié
     const { data: nextDays, error: nextDayError } = await sb.from('days')
       .select('id, label, date')
       .eq('trip_id', tripId)
@@ -705,106 +546,62 @@ function renderEventCards(events, container, currentMoment) {
   }).join('');
 }
 
-// ===== COUNTDOWN (pre-departure) =====
-function startCountdown(dateStr, label) {
-  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-  const container = document.getElementById('event-list');
-  if (!container) return;
-  const target = new Date(dateStr + 'T00:00:00');
-
-  function updateCountdown() {
-    const now = new Date();
-    const diff = target - now;
-    if (diff <= 0) {
-      clearInterval(countdownTimer);
-      countdownTimer = null;
-      loadTodayEvents();
-      return;
-    }
-    const days = Math.floor(diff / 86400000);
-    const hours = Math.floor((diff % 86400000) / 3600000);
-    const minutes = Math.floor((diff % 3600000) / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-    container.innerHTML = `
-      <div class="countdown-card">
-        <div class="countdown-title">Départ prévu</div>
-        <div style="font-size:13px;color:var(--text-1);font-weight:600">${esc(label || dateStr)}</div>
-        <div class="countdown-time">${days}j ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m</div>
-        <div class="countdown-sub">${String(seconds).padStart(2,'0')}s · ${new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}</div>
-      </div>`;
-  }
-
-  updateCountdown();
-  countdownTimer = setInterval(updateCountdown, 1000);
-}
-
 // ===== CHARGEMENT RAPPELS =====
 async function loadTodayTodos() {
   const today = todayLocal();
-  const listEls = [document.getElementById('todo-list-0'), document.getElementById('todo-list-1'), document.getElementById('todo-list-2')];
-  const countEl = document.getElementById('todos-count');
-  const navSub = document.getElementById('nav-todo-sub');
 
-  // Rappels non terminés pour le voyage
+  // Rappels avec date = aujourd'hui + rappels généraux non terminés
   const { data: todos, error: todosError } = await sb.from('todos')
     .select('*')
     .eq('trip_id', tripId)
     .eq('is_done', false)
     .order('created_at', { ascending: true });
 
+  const list = document.getElementById('todo-list');
+  const countEl = document.getElementById('todos-count');
+  const navSub = document.getElementById('nav-todo-sub');
+
   if (logError('Chargement des rappels', todosError)) {
-    listEls.forEach(el => { if (el) el.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les rappels</div>`; });
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les rappels</div>`;
     countEl.textContent = '—';
     navSub.textContent = 'Erreur de chargement';
     return;
   }
 
-  const addDays = (baseDateStr, offset) => {
-    const d = new Date(baseDateStr + 'T00:00:00');
-    d.setDate(d.getDate() + offset);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  };
+  if (!todos || todos.length === 0) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun rappel en attente</div>`;
+    countEl.textContent = '0';
+    navSub.textContent = 'Aucun rappel';
+    return;
+  }
 
-  const cols = [0,1,2].map(offset => {
-    const target = addDays(today, offset);
-    if (offset === 0) {
-      // today: include overdue + today
-      const overdue = todos.filter(t => t.due_date && t.due_date < today);
-      const todayOnly = todos.filter(t => t.due_date === today);
-      return [...overdue, ...todayOnly].slice(0, 6);
-    }
-    return todos.filter(t => t.due_date === target).slice(0,6);
-  });
+  const overdueTodos = todos.filter(t => t.due_date && t.due_date < today);
+  const todayTodosOnly = todos.filter(t => t.due_date === today);
+  const todayTodos = [...overdueTodos, ...todayTodosOnly].slice(0, 5);
 
-  const counts = cols.map(c => c.length);
-  const total = counts.reduce((s,n) => s + n, 0);
-  countEl.textContent = total;
+  countEl.textContent = todayTodos.length;
+  navSub.textContent = todayTodos.length > 0
+    ? `${todayTodos.length} rappel${todayTodos.length > 1 ? 's' : ''} prioritaire${todayTodos.length > 1 ? 's' : ''}`
+    : 'Tout est à jour ✓';
 
-  // nav sub keeps today's prioritized count
-  navSub.textContent = counts[0] > 0 ? `${counts[0]} rappel${counts[0]>1?'s':''} prioritaire${counts[0]>1?'s':''}` : 'Tout est à jour ✓';
+  if (todayTodos.length === 0) {
+    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Tout est à jour !</div>`;
+    return;
+  }
 
-  // render per column
-  cols.forEach((list, idx) => {
-    const el = listEls[idx];
-    if (!el) return;
-    if (!list || list.length === 0) {
-      el.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun rappel</div>`;
-      return;
-    }
-    el.innerHTML = list.map(t => {
-      const urgencyClass = getUrgencyClass(t, today);
-      const badgeHtml = urgencyClass ? `<span class="todo-badge ${urgencyClass.badge}">${urgencyClass.label}</span>` : '';
-      const dateHtml = t.due_date ? `<div class="todo-mini-date">${formatDate(t.due_date)}</div>` : '';
-      return `
-      <div class="todo-mini ${urgencyClass ? urgencyClass.card : ''}">
-        <div class="todo-mini-content">
-          <div class="todo-mini-title">${esc(t.title)}</div>
-          ${dateHtml}
-        </div>
-        ${badgeHtml}
-      </div>`;
-    }).join('');
-  });
+  list.innerHTML = todayTodos.map(t => {
+    const urgencyClass = getUrgencyClass(t, today);
+    const badgeHtml = urgencyClass ? `<span class="todo-badge ${urgencyClass.badge}">${urgencyClass.label}</span>` : '';
+    const dateHtml = t.due_date ? `<div class="todo-mini-date">${formatDate(t.due_date)}</div>` : '';
+    return `
+    <div class="todo-mini ${urgencyClass ? urgencyClass.card : ''}">
+      <div class="todo-mini-content">
+        <div class="todo-mini-title">${esc(t.title)}</div>
+        ${dateHtml}
+      </div>
+      ${badgeHtml}
+    </div>`;
+  }).join('');
 }
 
 function getUrgencyClass(todo, today) {
@@ -992,10 +789,7 @@ async function init() {
   if (trips.length === 0) {
     hideLoader();
     document.getElementById('event-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">🗺️</div>Aucun voyage trouvé</div>`;
-    ['todo-list-0','todo-list-1','todo-list-2'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun voyage trouvé</div>`;
-    });
+    document.getElementById('todo-list').innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun voyage trouvé</div>`;
     document.getElementById('trip-selector').innerHTML = '<option>Aucun voyage</option>';
     updateCurrency();
     return;
