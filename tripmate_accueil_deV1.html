@@ -104,6 +104,21 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
 .nav-card-sub { font-size: 10px; color: var(--text-3); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-card-accent { border-color: rgba(87,3,23,.38); box-shadow: 0 2px 10px rgba(87,3,23,.08); }
 
+/* TODOS: 3-day mini lists */
+.todos-3cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.todo-column { display: flex; flex-direction: column; gap: 8px; }
+.todo-col-title { font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 4px; }
+
+@media (max-width:520px) {
+  .todos-3cols { grid-template-columns: 1fr; }
+}
+
+/* Countdown card for pre-departure */
+.countdown-card { background: linear-gradient(180deg, rgba(87,3,23,0.06), rgba(87,3,23,0.02)); border-radius: 12px; padding: 16px; border: 1px solid rgba(87,3,23,0.08); display:flex; flex-direction:column; align-items:center; gap:8px; }
+.countdown-title { font-size: 12px; color: var(--text-2); text-transform: uppercase; letter-spacing: .08em; }
+.countdown-time { font-size: 28px; font-weight: 700; color: var(--brand); }
+.countdown-sub { font-size: 12px; color: var(--text-3); }
+
 /* SECTION HEADER */
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .section-title { font-size: 11px; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
@@ -279,14 +294,31 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
       </div>
     </div>
 
-    <!-- RAPPELS DU JOUR -->
+    <!-- RAPPELS: aujourd'hui / demain / surlendemain -->
     <div id="todos-section">
       <div class="section-head">
-        <div class="section-title"><span class="section-dot"></span>Rappels aujourd'hui</div>
+        <div class="section-title"><span class="section-dot"></span>Rappels</div>
         <span class="section-count" id="todos-count">—</span>
       </div>
-      <div class="todo-mini-list" id="todo-list">
-        <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
+      <div class="todos-3cols">
+        <div class="todo-column">
+          <div class="todo-col-title">Aujourd'hui</div>
+          <div class="todo-mini-list" id="todo-list-0">
+            <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
+          </div>
+        </div>
+        <div class="todo-column">
+          <div class="todo-col-title">Demain</div>
+          <div class="todo-mini-list" id="todo-list-1">
+            <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
+          </div>
+        </div>
+        <div class="todo-column">
+          <div class="todo-col-title">Surlendemain</div>
+          <div class="todo-mini-list" id="todo-list-2">
+            <div class="empty-block"><div class="empty-block-icon">✅</div>Chargement…</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -377,6 +409,7 @@ function getStoredTripId() {
 function setSelectedTrip(id) {
   tripId = id;
   localStorage.setItem(TRIP_STORAGE_KEY, id);
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   updateNavLinks();
 }
 
@@ -491,6 +524,7 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
+let countdownTimer = null;
 
 // ===== MOMENT DU JOUR =====
 function getMoment() {
@@ -540,7 +574,25 @@ async function loadTodayEvents() {
   }
 
   if (!days || days.length === 0) {
-    // Pas de jour pour aujourd'hui — chercher le prochain jour planifié
+    // Pas de jour pour aujourd'hui — vérifier s'il existe un premier jour futur (compte à rebours)
+    const { data: firstDays, error: firstDayError } = await sb.from('days')
+      .select('id, label, date')
+      .eq('trip_id', tripId)
+      .order('date', { ascending: true })
+      .limit(1);
+
+    if (logError('Chargement du premier jour', firstDayError)) {
+      list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les jours</div>`;
+      return;
+    }
+
+    if (firstDays && firstDays.length > 0 && firstDays[0].date > today) {
+      // Trip starts in the future — afficher un joli compte à rebours jusqu'au premier jour
+      startCountdown(firstDays[0].date, firstDays[0].label);
+      return;
+    }
+
+    // Sinon afficher le prochain jour planifié (s'il existe)
     const { data: nextDays, error: nextDayError } = await sb.from('days')
       .select('id, label, date')
       .eq('trip_id', tripId)
@@ -614,62 +666,106 @@ function renderEventCards(events, container, currentMoment) {
   }).join('');
 }
 
+// ===== COUNTDOWN (pre-departure) =====
+function startCountdown(dateStr, label) {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  const container = document.getElementById('event-list');
+  if (!container) return;
+  const target = new Date(dateStr + 'T00:00:00');
+
+  function updateCountdown() {
+    const now = new Date();
+    const diff = target - now;
+    if (diff <= 0) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      loadTodayEvents();
+      return;
+    }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    container.innerHTML = `
+      <div class="countdown-card">
+        <div class="countdown-title">Départ prévu</div>
+        <div style="font-size:13px;color:var(--text-1);font-weight:600">${esc(label || dateStr)}</div>
+        <div class="countdown-time">${days}j ${String(hours).padStart(2,'0')}h ${String(minutes).padStart(2,'0')}m</div>
+        <div class="countdown-sub">${String(seconds).padStart(2,'0')}s · ${new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}</div>
+      </div>`;
+  }
+
+  updateCountdown();
+  countdownTimer = setInterval(updateCountdown, 1000);
+}
+
 // ===== CHARGEMENT RAPPELS =====
 async function loadTodayTodos() {
   const today = todayLocal();
+  const listEls = [document.getElementById('todo-list-0'), document.getElementById('todo-list-1'), document.getElementById('todo-list-2')];
+  const countEl = document.getElementById('todos-count');
+  const navSub = document.getElementById('nav-todo-sub');
 
-  // Rappels avec date = aujourd'hui + rappels généraux non terminés
+  // Rappels non terminés pour le voyage
   const { data: todos, error: todosError } = await sb.from('todos')
     .select('*')
     .eq('trip_id', tripId)
     .eq('is_done', false)
     .order('created_at', { ascending: true });
 
-  const list = document.getElementById('todo-list');
-  const countEl = document.getElementById('todos-count');
-  const navSub = document.getElementById('nav-todo-sub');
-
   if (logError('Chargement des rappels', todosError)) {
-    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les rappels</div>`;
+    listEls.forEach(el => { if (el) el.innerHTML = `<div class="empty-block"><div class="empty-block-icon">⚠️</div>Impossible de charger les rappels</div>`; });
     countEl.textContent = '—';
     navSub.textContent = 'Erreur de chargement';
     return;
   }
 
-  if (!todos || todos.length === 0) {
-    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun rappel en attente</div>`;
-    countEl.textContent = '0';
-    navSub.textContent = 'Aucun rappel';
-    return;
-  }
+  const addDays = (baseDateStr, offset) => {
+    const d = new Date(baseDateStr + 'T00:00:00');
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
 
-  const overdueTodos = todos.filter(t => t.due_date && t.due_date < today);
-  const todayTodosOnly = todos.filter(t => t.due_date === today);
-  const todayTodos = [...overdueTodos, ...todayTodosOnly].slice(0, 5);
+  const cols = [0,1,2].map(offset => {
+    const target = addDays(today, offset);
+    if (offset === 0) {
+      // today: include overdue + today
+      const overdue = todos.filter(t => t.due_date && t.due_date < today);
+      const todayOnly = todos.filter(t => t.due_date === today);
+      return [...overdue, ...todayOnly].slice(0, 6);
+    }
+    return todos.filter(t => t.due_date === target).slice(0,6);
+  });
 
-  countEl.textContent = todayTodos.length;
-  navSub.textContent = todayTodos.length > 0
-    ? `${todayTodos.length} rappel${todayTodos.length > 1 ? 's' : ''} prioritaire${todayTodos.length > 1 ? 's' : ''}`
-    : 'Tout est à jour ✓';
+  const counts = cols.map(c => c.length);
+  const total = counts.reduce((s,n) => s + n, 0);
+  countEl.textContent = total;
 
-  if (todayTodos.length === 0) {
-    list.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Tout est à jour !</div>`;
-    return;
-  }
+  // nav sub keeps today's prioritized count
+  navSub.textContent = counts[0] > 0 ? `${counts[0]} rappel${counts[0]>1?'s':''} prioritaire${counts[0]>1?'s':''}` : 'Tout est à jour ✓';
 
-  list.innerHTML = todayTodos.map(t => {
-    const urgencyClass = getUrgencyClass(t, today);
-    const badgeHtml = urgencyClass ? `<span class="todo-badge ${urgencyClass.badge}">${urgencyClass.label}</span>` : '';
-    const dateHtml = t.due_date ? `<div class="todo-mini-date">${formatDate(t.due_date)}</div>` : '';
-    return `
-    <div class="todo-mini ${urgencyClass ? urgencyClass.card : ''}">
-      <div class="todo-mini-content">
-        <div class="todo-mini-title">${esc(t.title)}</div>
-        ${dateHtml}
-      </div>
-      ${badgeHtml}
-    </div>`;
-  }).join('');
+  // render per column
+  cols.forEach((list, idx) => {
+    const el = listEls[idx];
+    if (!el) return;
+    if (!list || list.length === 0) {
+      el.innerHTML = `<div class="empty-block"><div class="empty-block-icon">✅</div>Aucun rappel</div>`;
+      return;
+    }
+    el.innerHTML = list.map(t => {
+      const urgencyClass = getUrgencyClass(t, today);
+      const badgeHtml = urgencyClass ? `<span class="todo-badge ${urgencyClass.badge}">${urgencyClass.label}</span>` : '';
+      const dateHtml = t.due_date ? `<div class="todo-mini-date">${formatDate(t.due_date)}</div>` : '';
+      return `
+      <div class="todo-mini ${urgencyClass ? urgencyClass.card : ''}">
+        <div class="todo-mini-content">
+          <div class="todo-mini-title">${esc(t.title)}</div>
+          ${dateHtml}
+        </div>
+        ${badgeHtml}
+      </div>`;
+    }).join('');
+  });
 }
 
 function getUrgencyClass(todo, today) {
