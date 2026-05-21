@@ -459,6 +459,22 @@ function loadDriveLinkForTrip(id) {
   }
 }
 
+function normalizeMapUrl(rawUrl) {
+  if (!rawUrl) return rawUrl;
+  try {
+    const u = new URL(rawUrl);
+    // Normalize Google My Maps edit link to viewer and strip query params
+    if (/\/maps\/d\//i.test(u.pathname)) {
+      u.pathname = u.pathname.replace('/maps/d/edit', '/maps/d/viewer').replace('/maps/d/u/0/edit', '/maps/d/u/0/viewer');
+      u.search = '';
+      return u.toString();
+    }
+    return rawUrl;
+  } catch (e) {
+    return rawUrl;
+  }
+}
+
 async function loadMapLinkForTrip(id) {
   if (!id) return;
   try {
@@ -470,7 +486,8 @@ async function loadMapLinkForTrip(id) {
     const a = document.getElementById('nav-maps');
     if (!a) return;
     if (data?.google_map_url) {
-      a.href = data.google_map_url;
+      const norm = normalizeMapUrl(data.google_map_url);
+      a.href = norm;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
     } else {
@@ -488,6 +505,13 @@ function openMapInApp(url) {
   const ua = navigator.userAgent || '';
   const isAndroid = /Android/i.test(ua);
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  // Google My Maps links ("/maps/d/") are not reliably opened by the native Google Maps app on iOS.
+  // Open those links in the browser instead of attempting the native scheme.
+  if (/\/maps\/d\//i.test(url)) {
+    window.open(url, '_blank', 'noopener');
+    return;
+  }
 
   if (isAndroid) {
     const fallback = encodeURIComponent(url);
