@@ -508,17 +508,17 @@ function openMapInApp(url) {
   window.open(url, '_blank', 'noopener');
 }
 
-// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native
+// Clic sur le bouton Maps — ouvrir simplement l'URL (pas d'ouverture native)
 document.addEventListener('click', function(e) {
   const el = e.target.closest && e.target.closest('#nav-maps');
   if (!el) return;
-  e.preventDefault();
   const url = el.href || el.dataset.mapUrl || '';
   if (!url || url.startsWith('javascript:')) {
+    e.preventDefault();
     showToast('Carte non disponible pour ce voyage');
     return;
   }
-  openMapInApp(url);
+  // Laisser le navigateur gérer l'ouverture du lien (le lien a déjà target="_blank")
 });
 
 function renderTripSelector() {
