@@ -600,19 +600,36 @@ document.addEventListener('click', function(e) {
   const el = e.target.closest && e.target.closest('#nav-maps');
   if (!el) return;
   e.preventDefault();
-  const url = el.getAttribute('href') || el.dataset.mapUrl || '';
-  if (!url || url.startsWith('javascript:')) {
+  if (!tripId) { showToast('Carte non disponible pour ce voyage'); return; }
+
+  // Fetch the latest map link from Supabase at click time and open it.
+  try {
+    sb.from('trips').select('google_map_url').eq('id', tripId).single().then(({ data, error }) => {
+      if (error) {
+        console.warn('fetch map on click error', error);
+        showToast('Carte non disponible pour ce voyage');
+        return;
+      }
+      const url = data?.google_map_url || '';
+      if (!url) {
+        showToast('Carte non disponible pour ce voyage');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }).catch(err => {
+      console.error('click->loadMapLink error', err);
+      showToast('Carte non disponible pour ce voyage');
+    });
+  } catch (err) {
+    console.error('click->loadMapLink exception', err);
     showToast('Carte non disponible pour ce voyage');
-    return;
   }
-  // Open the stored Supabase URL in a new tab without attempting native schemes
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
 });
 
 function renderTripSelector() {
