@@ -600,31 +600,19 @@ document.addEventListener('click', function(e) {
   const el = e.target.closest && e.target.closest('#nav-maps');
   if (!el) return;
   e.preventDefault();
-
-  // If the server provided explicit native URL or coords, prefer them
-  const ds = el.dataset || {};
-  if (ds.lat && ds.lng) {
-    openMapInAppCoords(ds.lat, ds.lng, el.href || '');
-    return;
-  }
-  if (ds.nativeUrl) {
-    // try to open native URL directly
-    openMapInApp(ds.nativeUrl);
-    return;
-  }
-
-  const url = el.href || el.dataset.mapUrl || '';
+  const url = el.getAttribute('href') || el.dataset.mapUrl || '';
   if (!url || url.startsWith('javascript:')) {
     showToast('Carte non disponible pour ce voyage');
     return;
   }
-
-  const coords = parseLatLngFromUrl(url);
-  if (coords) {
-    openMapInAppCoords(coords.lat, coords.lng, url);
-  } else {
-    openMapInApp(url);
-  }
+  // Open the stored Supabase URL in a new tab without attempting native schemes
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 });
 
 function renderTripSelector() {
