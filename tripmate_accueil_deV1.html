@@ -459,22 +459,6 @@ function loadDriveLinkForTrip(id) {
   }
 }
 
-function normalizeMapUrl(rawUrl) {
-  if (!rawUrl) return rawUrl;
-  try {
-    const u = new URL(rawUrl);
-    // Normalize Google My Maps edit link to viewer and strip query params
-    if (/\/maps\/d\//i.test(u.pathname)) {
-      u.pathname = u.pathname.replace('/maps/d/edit', '/maps/d/viewer').replace('/maps/d/u/0/edit', '/maps/d/u/0/viewer');
-      u.search = '';
-      return u.toString();
-    }
-    return rawUrl;
-  } catch (e) {
-    return rawUrl;
-  }
-}
-
 async function loadMapLinkForTrip(id) {
   if (!id) return;
   try {
@@ -486,8 +470,8 @@ async function loadMapLinkForTrip(id) {
     const a = document.getElementById('nav-maps');
     if (!a) return;
     if (data?.google_map_url) {
-      const norm = normalizeMapUrl(data.google_map_url);
-      a.href = norm;
+      // Use exactly the URL saved in Supabase without altering it.
+      a.href = data.google_map_url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
     } else {
