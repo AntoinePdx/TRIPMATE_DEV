@@ -523,9 +523,10 @@ function openMapInApp(url) {
   }
 
   if (isIOS) {
-    const scheme = 'comgooglemaps://?q=' + encodeURIComponent(url);
-    window.location = scheme;
-    setTimeout(() => { window.location = url; }, 1500);
+    // On iOS the comgooglemaps://?q=<url> scheme often forces the app to search the full URL text.
+    // To avoid the behavior of filling the search field with the raw URL, open the link
+    // in the browser instead of attempting to open the native Maps app.
+    window.open(url, '_blank', 'noopener');
     return;
   }
 
