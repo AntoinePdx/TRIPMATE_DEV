@@ -517,7 +517,61 @@ function openMapInApp(url) {
   window.open(url, '_blank', 'noopener');
 }
 
-// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native
+function parseLatLngFromUrl(url) {
+  if (!url) return null;
+  try {
+    let m;
+    // pattern: @lat,lng
+    m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { lat: m[1], lng: m[2] };
+    // pattern: q=lat,lng or query=lat,lng
+    m = url.match(/[?&](?:q|query)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { lat: m[1], lng: m[2] };
+    // pattern: ll=lat,lng
+    m = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { lat: m[1], lng: m[2] };
+    // pattern: !3dlat!4dlng
+    m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (m) return { lat: m[1], lng: m[2] };
+  } catch (e) {}
+  return null;
+}
+
+function openMapInAppCoords(lat, lng, fallbackUrl) {
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const googleHttp = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  const appleMaps = `maps://?ll=${lat},${lng}`;
+  const comGoogle = `comgooglemaps://?q=${lat},${lng}`;
+  const geoUri = `geo:${lat},${lng}?q=${lat},${lng}`;
+
+  if (isAndroid) {
+    // Try geo: first which opens map apps; then fallback to intent then web
+    window.location.href = geoUri;
+    setTimeout(() => {
+      const intent = `intent://maps.google.com/maps?daddr=${lat},${lng}#Intent;package=com.google.android.apps.maps;scheme=https;end`;
+      window.location.href = intent;
+      setTimeout(() => { window.open(fallbackUrl || googleHttp, '_blank', 'noopener'); }, 1100);
+    }, 600);
+    return;
+  }
+
+  if (isIOS) {
+    // Try Apple Maps first, then Google Maps app, then web
+    window.location = appleMaps;
+    setTimeout(() => {
+      window.location = comGoogle;
+      setTimeout(() => { window.open(fallbackUrl || googleHttp, '_blank', 'noopener'); }, 1000);
+    }, 800);
+    return;
+  }
+
+  // Desktop fallback
+  window.open(fallbackUrl || googleHttp, '_blank', 'noopener');
+}
+
+// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native (si on peut extraire des coordonnées)
 document.addEventListener('click', function(e) {
   const el = e.target.closest && e.target.closest('#nav-maps');
   if (!el) return;
@@ -527,7 +581,12 @@ document.addEventListener('click', function(e) {
     showToast('Carte non disponible pour ce voyage');
     return;
   }
-  openMapInApp(url);
+  const coords = parseLatLngFromUrl(url);
+  if (coords) {
+    openMapInAppCoords(coords.lat, coords.lng, url);
+  } else {
+    openMapInApp(url);
+  }
 });
 
 function renderTripSelector() {
