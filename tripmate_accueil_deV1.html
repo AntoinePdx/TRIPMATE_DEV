@@ -210,6 +210,9 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
 /* TOAST */
 .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text-1); color: #fff; border-radius: 20px; padding: 9px 18px; font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* DEBUG: small overlay to inspect map link/coords/UA when ?debug_maps=1 */
+.map-debug-overlay { position: fixed; bottom: 12px; left: 12px; right: 12px; max-width: 430px; background: rgba(0,0,0,0.78); color: #fff; padding: 10px; border-radius: 10px; font-size: 13px; z-index: 99999; box-shadow: 0 8px 30px rgba(0,0,0,0.4); font-family: var(--font); }
+.map-debug-overlay pre { white-space: pre-wrap; margin: 8px 0 0 0; max-height: 260px; overflow: auto; }
 </style>
 </head>
 <body>
@@ -1153,6 +1156,72 @@ function refreshHomeData() {
 }
 
 checkAuth().then(ok => { if (ok) init(); });
+
+// Debug overlay: show map href, dataset coords, parsed coords and UA when ?debug_maps=1
+function initMapDebug() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('debug_maps')) return;
+    const ua = navigator.userAgent || navigator.vendor || '';
+    const overlay = document.createElement('div');
+    overlay.className = 'map-debug-overlay';
+    overlay.id = 'map-debug-overlay';
+    overlay.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <strong>Map debug</strong>
+        <div style="display:flex;gap:8px">
+          <button id="map-debug-refresh" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 8px;border-radius:6px;font-size:12px">Refresh</button>
+          <button id="map-debug-close" style="background:transparent;border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 8px;border-radius:6px;font-size:12px">Close</button>
+        </div>
+      </div>
+      <pre id="map-debug-pre"></pre>
+    `;
+    document.body.appendChild(overlay);
+
+    function render() {
+      const a = document.getElementById('nav-maps');
+      const href = a ? (a.getAttribute('href') || a.dataset.mapUrl || '') : '';
+      const ds = a ? Object.assign({}, a.dataset) : {};
+      let parsed = null;
+      try { parsed = typeof parseLatLngFromUrl === 'function' ? parseLatLngFromUrl(href) : null; } catch (e) { parsed = { error: String(e) }; }
+      const chosen = (ds.lat && ds.lng) ? 'use dataset coords' : (ds.nativeUrl ? 'use dataset nativeUrl' : (parsed ? 'parsed coords from url' : 'no coords -> web'));
+      const info = {
+        userAgent: ua,
+        isIOS: /iPhone|iPad|iPod/i.test(ua),
+        isAndroid: /Android/i.test(ua),
+        href,
+        dataset: ds,
+        parsedCoords: parsed,
+        chosenOpen: chosen,
+        now: new Date().toISOString()
+      };
+      const pre = document.getElementById('map-debug-pre');
+      if (pre) pre.textContent = JSON.stringify(info, null, 2);
+    }
+
+    document.getElementById('map-debug-refresh').addEventListener('click', render);
+    document.getElementById('map-debug-close').addEventListener('click', function() { overlay.remove(); });
+
+    // Append a log entry when user clicks the maps nav
+    document.addEventListener('click', function (e) {
+      const el = e.target.closest && e.target.closest('#nav-maps');
+      if (!el) return;
+      const href = el.getAttribute('href') || el.dataset.mapUrl || '';
+      let parsed = null;
+      try { parsed = typeof parseLatLngFromUrl === 'function' ? parseLatLngFromUrl(href) : null; } catch (err) { parsed = { error: String(err) }; }
+      const log = `Clicked: ${new Date().toISOString()}\nhref: ${href}\ndataset: ${JSON.stringify(el.dataset)}\nparsed: ${JSON.stringify(parsed)}\n`;
+      const pre = document.getElementById('map-debug-pre');
+      if (pre) pre.textContent = log + '\n' + pre.textContent;
+    }, true);
+
+    // initial render
+    setTimeout(render, 100);
+  } catch (e) {
+    console.error('initMapDebug failed', e);
+  }
+}
+
+initMapDebug();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
