@@ -462,15 +462,36 @@ function loadDriveLinkForTrip(id) {
 async function loadMapLinkForTrip(id) {
   if (!id) return;
   try {
-    const { data, error } = await sb.from('trips').select('google_map_url').eq('id', id).single();
+    // Select additional optional fields if present in the DB: native url or coords
+    const { data, error } = await sb.from('trips').select('google_map_url, google_map_lat, google_map_lng, google_map_native_url').eq('id', id).single();
     if (error) {
       console.warn('loadMapLinkForTrip error', error);
       return;
     }
     const a = document.getElementById('nav-maps');
     if (!a) return;
+
+    // Prefer an explicit native URL stored in the DB
+    if (data?.google_map_native_url) {
+      a.href = data.google_map_native_url;
+      a.dataset.nativeUrl = data.google_map_native_url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      return;
+    }
+
+    // If we have stored coordinates, surface them for the click handler
+    if (data?.google_map_lat && data?.google_map_lng) {
+      a.dataset.lat = data.google_map_lat;
+      a.dataset.lng = data.google_map_lng;
+      a.href = `https://www.google.com/maps/search/?api=1&query=${data.google_map_lat},${data.google_map_lng}`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      return;
+    }
+
+    // Fallback: use the raw URL saved in Supabase
     if (data?.google_map_url) {
-      // Use exactly the URL saved in Supabase without altering it.
       a.href = data.google_map_url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
@@ -571,16 +592,30 @@ function openMapInAppCoords(lat, lng, fallbackUrl) {
   window.open(fallbackUrl || googleHttp, '_blank', 'noopener');
 }
 
-// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native (si on peut extraire des coordonnées)
+// Intercepte le clic sur le bouton Maps et tente d'ouvrir l'app native (si possible)
 document.addEventListener('click', function(e) {
   const el = e.target.closest && e.target.closest('#nav-maps');
   if (!el) return;
   e.preventDefault();
+
+  // If the server provided explicit native URL or coords, prefer them
+  const ds = el.dataset || {};
+  if (ds.lat && ds.lng) {
+    openMapInAppCoords(ds.lat, ds.lng, el.href || '');
+    return;
+  }
+  if (ds.nativeUrl) {
+    // try to open native URL directly
+    openMapInApp(ds.nativeUrl);
+    return;
+  }
+
   const url = el.href || el.dataset.mapUrl || '';
   if (!url || url.startsWith('javascript:')) {
     showToast('Carte non disponible pour ce voyage');
     return;
   }
+
   const coords = parseLatLngFromUrl(url);
   if (coords) {
     openMapInAppCoords(coords.lat, coords.lng, url);
