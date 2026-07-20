@@ -22,9 +22,9 @@ jobs:
       # 2. Envoie le ping à Supabase
       - name: Ping Supabase Database
         run: |
-          curl -f -sS -X GET "${{ secrets.https://bqgrrzgfvkpxhkmaiumh.supabase.co }}/rest/v1/trips?select=*" \
-          -H "apikey: ${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3JyemdmdmtweGhrbWFpdW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3Mzg5MjcsImV4cCI6MjA5MzMxNDkyN30.StquBZevutpEF6VxXe51xW3EGbTa1R6nzd-hF6it1D4 }}" \
-          -H "Authorization: Bearer ${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3JyemdmdmtweGhrbWFpdW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3Mzg5MjcsImV4cCI6MjA5MzMxNDkyN30.StquBZevutpEF6VxXe51xW3EGbTa1R6nzd-hF6it1D4 }}"
+          curl -f -sS -X GET "${{ https://bqgrrzgfvkpxhkmaiumh.supabase.co }}/rest/v1/trips?select=*" \
+          -H "apikey: ${{ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3JyemdmdmtweGhrbWFpdW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3Mzg5MjcsImV4cCI6MjA5MzMxNDkyN30.StquBZevutpEF6VxXe51xW3EGbTa1R6nzd-hF6it1D4 }}" \
+          -H "Authorization: Bearer ${{ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3JyemdmdmtweGhrbWFpdW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3Mzg5MjcsImV4cCI6MjA5MzMxNDkyN30.StquBZevutpEF6VxXe51xW3EGbTa1R6nzd-hF6it1D4 }}"
 
       # 3. Met à jour la date et crée le commit pour feinter GitHub
       - name: Keep GitHub active (Auto-commit)
