@@ -299,13 +299,13 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
 
         <div class="currency-top-row">
           <div class="currency-toggle">
-            <button class="currency-toggle-btn active" id="toggle-from-eur" onclick="setDirection('from_eur')">€ →</button>
-            <button class="currency-toggle-btn" id="toggle-to-eur" onclick="setDirection('to_eur')">→ €</button>
+            <button class="currency-toggle-btn" id="toggle-from-eur" onclick="setDirection('from_eur')">€ →</button>
+            <button class="currency-toggle-btn active" id="toggle-to-eur" onclick="setDirection('to_eur')">→ €</button>
           </div>
           <div class="currency-selector-wrap">
             <button class="currency-selector-btn" id="currency-selector-btn">
-              <span id="currency-selector-flag">🇺🇸</span>
-              <span id="currency-selector-code">USD</span>
+              <span id="currency-selector-flag">🇮🇩</span>
+              <span id="currency-selector-code">IDR</span>
               <span class="currency-selector-arrow">▼</span>
             </button>
             <div class="currency-dropdown" id="currency-dropdown"></div>
@@ -316,7 +316,7 @@ body { font-family: var(--font); background: var(--bg-1); color: var(--text-1); 
           <div class="currency-amount-wrap">
             <input class="currency-amount" id="currency-input" type="number" inputmode="decimal" value="100" min="0" />
           </div>
-          <div class="currency-from-label" id="currency-from-label">EUR</div>
+          <div class="currency-from-label" id="currency-from-label">IDR</div>
         </div>
 
         <div id="currency-result"></div>
@@ -620,19 +620,19 @@ function formatDate(dateStr) {
 
 // ===== CONVERTISSEUR DE DEVISES =====
 const RATES = {
-  USD: 1.08,
-  GBP: 0.856,
-  IDR: 17500,
+  IDR: 20469.130644,
+  USD: 1.154805,
+  GBP: 0.855132,
 };
 
 const CURRENCIES = [
+  { code: 'IDR', flag: '🇮🇩', name: 'Roupie indonésienne' },
   { code: 'USD', flag: '🇺🇸', name: 'Dollar US' },
   { code: 'GBP', flag: '🇬🇧', name: 'Livre sterling' },
-  { code: 'IDR', flag: '🇮🇩', name: 'Roupie indonésienne' },
 ];
 
-let currencyDirection = 'from_eur';
-let selectedCurrency = 'USD';
+let currencyDirection = 'to_eur';
+let selectedCurrency = 'IDR';
 let dropdownOpen = false;
 
 function buildDropdown() {
@@ -683,7 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
     dropdownOpen ? closeDropdown() : openDropdown();
   });
   document.getElementById('currency-input').addEventListener('input', updateCurrency);
-  updateCurrency();
+  updateSelectorBtn();
+  setDirection('to_eur');
 });
 
 function setDirection(dir) {
