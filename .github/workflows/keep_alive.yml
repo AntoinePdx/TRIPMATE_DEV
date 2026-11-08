@@ -1,49 +1,81 @@
-name: Keep Supabase Active
+name: Keep Supabase Alive
 
 on:
   schedule:
+    # Tous les jours à 06:17 UTC (minute non ronde = moins de retards côté GitHub)
     - cron: '17 6 * * *'
-  workflow_dispatch:
-
-permissions:
-  contents: write
+  workflow_dispatch: # Permet de le lancer à la main
 
 jobs:
-  ping:
+  ping_and_commit:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 10
+
+    # Donne le droit au script d'écrire et de push sur le dépôt
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Ping Supabase REST API
+      # Écriture en base (fonction keep_alive, si elle existe) + lecture de la table principale.
+      # Réessaie plusieurs fois pour absorber les erreurs réseau passagères.
+      - name: Ping Supabase Database
+        id: ping
+        continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          set -euo pipefail
+          set -u
+          # Nettoie les secrets (espaces / retours à la ligne / slash final collés par erreur)
+          URL=$(printf '%s' "$SUPABASE_URL" | tr -d '[:space:]' | sed 's:/*$::')
+          KEY=$(printf '%s' "$SUPABASE_KEY" | tr -d '[:space:]')
+          [ -n "$URL" ] || { echo "::error::Secret SUPABASE_URL vide ou absent"; exit 1; }
+          [ -n "$KEY" ] || { echo "::error::Secret SUPABASE_KEY vide ou absent"; exit 1; }
+          echo "Host: ${URL#https://}"
 
-          if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_KEY" ]]; then
-            echo "::error::Configure the SUPABASE_URL and SUPABASE_KEY repository secrets."
-            exit 1
-          fi
+          call() { # $1 = méthode, $2 = chemin, $3 = body optionnel ; affiche le code HTTP et la réponse
+            code=$(curl -sS --max-time 30 -o /tmp/body -w '%{http_code}' -X "$1" "$URL$2" \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+              -H "Content-Type: application/json" ${3:+-d "$3"}) || code=000
+            echo "  $1 $2 -> HTTP $code : $(head -c 300 /tmp/body 2>/dev/null)"
+            [ "${code:0:1}" = 2 ]
+          }
 
-          curl --fail-with-body --silent --show-error \
-            --retry 3 --retry-all-errors --retry-delay 5 --max-time 30 \
-            --get "${SUPABASE_URL%/}/rest/v1/trips" \
-            --data-urlencode "select=id" \
-            --data-urlencode "limit=1" \
-            --header "apikey: $SUPABASE_KEY" \
-            --header "Authorization: Bearer $SUPABASE_KEY" \
-            --output /dev/null
+          for attempt in 1 2 3 4 5; do
+            echo "Tentative $attempt..."
+            rpc_ok=1
+            if ! call POST /rest/v1/rpc/keep_alive '{}'; then
+              if [ "$code" = 404 ]; then
+                # Fonction pas encore créée : on se contente de la lecture
+                echo "::warning::Fonction SQL keep_alive absente : ping en lecture seule."
+              else
+                rpc_ok=0
+              fi
+            fi
+            if [ "$rpc_ok" = 1 ] && call GET "/rest/v1/trips?select=id&limit=1"; then
+              echo "Ping OK"
+              exit 0
+            fi
+            [ "$attempt" -lt 5 ] && sleep $((attempt * 20))
+          done
+          echo "::error::Supabase ne répond pas : le projet est peut-être en pause. Restaure-le depuis le dashboard."
+          exit 1
 
-      - name: Record successful ping
+      # Commit même si le ping échoue : sinon GitHub désactive les workflows
+      # planifiés après 60 jours sans activité sur le dépôt.
+      - name: Keep GitHub active (Auto-commit)
+        if: always()
         run: |
-          date -u '+%Y-%m-%dT%H:%M:%SZ' > last_ping.txt
+          echo "$(date -u) ping=${{ steps.ping.outcome }}" > last_ping.txt
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add last_ping.txt
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: update supabase ping timestamp [skip ci]"
-            git push
-          fi
+          git diff-index --quiet HEAD || (git commit -m "chore: update supabase ping timestamp [skip ci]" && git push)
+
+      # Fait échouer le run (=> email de GitHub) si le ping a raté
+      - name: Report ping failure
+        if: steps.ping.outcome == 'failure'
+        run: exit 1
